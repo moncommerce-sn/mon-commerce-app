@@ -1,0 +1,173 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mon commerce</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#eff5f0;--ink:#12261d;--mut:#5c7065;--g:#14513c;--a:#e8a117;--r:#b8452a;--ok:#1f7a4f;--ln:#d9e3dc}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.3 Roboto,system-ui,sans-serif;padding-bottom:84px}
+.w{max-width:600px;margin:auto;padding:20px 16px}
+h1{font-size:2rem;margin:8px 0 2px}.sub{color:var(--mut);margin:0 0 18px}
+h2{font-size:1.3rem;margin:0 0 12px;padding-bottom:12px;border-bottom:1px solid var(--ln)}
+.card{background:#fff;border:1px solid var(--ln);border-radius:24px;padding:20px;margin-bottom:16px}
+label{display:block;color:var(--mut);font-size:.95rem;margin:12px 0 6px}
+input,select{width:100%;padding:14px;border:1.5px solid var(--ln);border-radius:14px;background:#f0f5f1;font:inherit;color:var(--ink)}
+.btn{width:100%;padding:16px;border:0;border-radius:16px;font:inherit;font-weight:700;background:var(--g);color:#fff;margin-top:12px;cursor:pointer}
+.am{background:var(--a);color:var(--ink)}.ol{background:#fff;color:var(--g);border:1.5px solid var(--g)}.rd{background:var(--r)}
+.sm{width:auto;margin:0;padding:12px 14px;border-radius:14px;font-size:.95rem}
+.line{display:flex;gap:8px;align-items:center}.line input{flex:1;min-width:0}
+.it+.it{border-top:1px solid var(--ln)}.it{padding:12px 0}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.top b{font-size:1.1rem}
+.mut{color:var(--mut)}.ok{color:var(--ok);font-weight:700}.bad{color:var(--r);font-weight:700}
+.big{font-size:1.9rem;font-weight:800}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--ln)}
+nav button{flex:1;min-width:0;padding:18px 0;border:0;background:none;color:var(--mut);font:inherit;font-size:.74rem;font-weight:600;position:relative}
+nav button.on{color:var(--g)}nav button.on:after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--g)}
+#t{position:fixed;top:12px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;opacity:0;transition:opacity .2s;z-index:9;max-width:90%;text-align:center;pointer-events:none}
+#cam{position:fixed;inset:0;background:#000;z-index:8;display:flex;flex-direction:column;padding:16px;gap:12px}
+#cam video{flex:1;min-height:0;width:100%;object-fit:cover;border-radius:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:24px 12px;margin-bottom:24px}
+.st{background:#fff;border:1px solid var(--ln);border-radius:24px;padding:22px 12px;text-align:center}
+.st span{display:block;color:var(--mut)}
+.st b{display:block;font-size:1.75rem;font-weight:800;line-height:1.15;margin-top:6px}
+.top b{font-size:1.3rem}
+</style></head><body>
+<div id="t"></div>
+<div id="cam" hidden><video id="vid" playsinline muted></video><button class="btn am" onclick="closeCam()">Fermer la caméra</button></div>
+<div class="w" id="au"><h1>Mon commerce</h1><p class="sub">Connecte-toi pour gérer ta boutique.</p><div class="card"><input id="em" type="email" placeholder="Email"><label></label><input id="pw" type="password" placeholder="Mot de passe (6 caractères minimum)"><button class="btn" onclick="auth(false)">Se connecter</button><button class="btn ol" onclick="auth(true)">Créer mon compte</button></div></div>
+<div id="ap" hidden>
+<div class="w"><h1>Mon commerce</h1><p class="sub">Stock, ventes, bénéfices, dettes et dépenses</p>
+
+<section id="s-res"><div id="rsm"></div></section>
+
+<section id="s-vente">
+<div class="card"><h2>Chercher un produit</h2><button class="btn am" onclick="scan('v')">📷 Scanner le code-barres</button>
+<label>Ou rechercher par nom (produits sans code-barres)</label><input id="q" oninput="rq()" placeholder="Nom, catégorie ou code..."><div id="res"></div></div>
+<div class="card" id="pickc" hidden><b id="pn" style="font-size:1.3rem"></b><div class="mut" id="pi"></div>
+<label>Quantité</label><input id="pq" type="number" inputmode="decimal" oninput="pm()">
+<label>Prix de vente pour cette vente (FCFA)</label><input id="pp" type="number" inputmode="numeric" oninput="pm()">
+<p class="mut">Marge : <b id="pg" class="ok"></b></p><button class="btn am" onclick="toCart()">Ajouter au panier</button></div>
+<div class="card"><h2>Panier</h2><div id="cart"></div><div class="top" style="margin-top:8px"><b>Total</b><b class="big" id="tot">0 FCFA</b></div></div>
+<div class="card"><h2>Paiement</h2>
+<label>Moyen de paiement</label><select id="pay"><option>Espèces</option><option>Wave</option><option>Orange Money</option><option>Autre moyen de paiement</option></select>
+<label>Type de vente</label><select id="ty" onchange="ct()"><option value="paid">Payée en totalité</option><option value="credit">À crédit (dette)</option></select>
+<label>Nom du client (obligatoire si crédit)</label><input id="cn" list="cl" placeholder="Nom du client"><datalist id="cl"></datalist>
+<div id="cb" hidden><label>Montant déjà payé (FCFA, facultatif)</label><input id="ac" type="number" inputmode="numeric"></div>
+<button class="btn" onclick="sell()">Valider la vente</button></div>
+</section>
+
+<section id="s-stock">
+<div class="card"><h2 id="fh">Ajouter un produit</h2>
+<label>Nom du produit</label><input id="f-n"><label>Catégorie (facultatif)</label><input id="f-c">
+<label>Code-barres (facultatif)</label><div class="line"><input id="f-b"><button class="btn am sm" onclick="scan('f')">📷 Scanner</button></div>
+<label>Unité</label><select id="f-u"><option>pièce</option><option>kg</option><option>litre</option><option>carton</option><option>sachet</option><option>paquet</option><option>boîte</option><option>sac</option><option>bouteille</option><option>autre</option></select>
+<label>Prix d'achat (FCFA)</label><input id="f-a" type="number" inputmode="numeric"><label>Prix de vente (FCFA)</label><input id="f-v" type="number" inputmode="numeric">
+<label>Quantité en stock</label><input id="f-s" type="number" inputmode="decimal"><label>Alerte stock faible (quantité)</label><input id="f-l" type="number" inputmode="decimal" value="5">
+<button class="btn" id="f-ok" onclick="saveP()">Ajouter le produit</button><button class="btn ol" id="f-x" hidden onclick="resetF()">Annuler la modification</button></div>
+<div class="card"><h2 id="sh">Mes produits</h2><input id="sq" oninput="rs()" placeholder="🔍 Rechercher un produit..."><div id="sl"></div></div>
+</section>
+
+<section id="s-dettes"><div class="card"><div class="mut">Total des dettes clients</div><div class="big bad" id="dtt">0 FCFA</div></div><div class="card"><h2>Liste des dettes</h2><div id="dl"></div></div><div class="card"><h2>Dettes soldées</h2><div id="ds"></div></div><div class="card"><h2>Historique des remboursements</h2><div id="dr"></div></div></section>
+
+<section id="s-dep"><div class="card"><h2>Ajouter une dépense</h2><label>Type</label><select id="dy"><option>Transport</option><option>Livraison</option><option>Électricité</option><option>Loyer</option><option>Emballage</option><option>Autres dépenses</option></select>
+<label>Montant (FCFA)</label><input id="dm" type="number" inputmode="numeric"><label>Note (facultatif)</label><input id="dn"><label>Date</label><input id="dd" type="date"><button class="btn" onclick="addD()">Enregistrer la dépense</button></div>
+<div class="card"><h2 id="dh">Dépenses</h2><div id="dlist"></div></div></section>
+
+<section id="s-hist"><div class="card"><h2 id="hh">Historique des ventes</h2><div id="hl"></div></div></section>
+</div>
+<nav><button id="n-res" onclick="show('res')">Résumé</button><button id="n-vente" onclick="show('vente')">Vente</button><button id="n-stock" onclick="show('stock')">Stock</button><button id="n-dettes" onclick="show('dettes')">Dettes</button><button id="n-dep" onclick="show('dep')">Dépenses</button><button id="n-hist" onclick="show('hist')">Historique</button></nav>
+</div>
+<script>
+const sb=supabase.createClient("https://kqfhbxzcixcdcjcsvkla.supabase.co","sb_publishable_gmcnPJ8EOrK0pcEnSZIH8w_FY_65XvF");
+const $=i=>document.getElementById(i),F=n=>Math.round(+n||0).toLocaleString("fr-FR")+" FCFA",
+esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])),
+dt=x=>new Date(x).toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"}),
+S=(l,f)=>l.reduce((s,x)=>s+f(x),0),rest=v=>Math.max(0,v.montant_total-v.montant_paye-S(v.paiements_dette||[],p=>+p.montant));
+const td=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+let P=[],K=[],V=[],D=[],C=[],sel=null,eid=null,stream,halt=false,hfil="all";
+function msg(t){const e=$("t");e.textContent=t;e.style.opacity=1;setTimeout(()=>e.style.opacity=0,3200)}
+async function auth(up){const email=$("em").value.trim(),password=$("pw").value;
+ const r=up?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});
+ if(r.error)return msg(r.error.message);
+ if(!r.data.session)return msg("Compte créé. Confirme ton email, puis connecte-toi.");
+ start()}
+async function start(){const {data}=await sb.auth.getSession(),ok=!!data.session;$("au").hidden=ok;$("ap").hidden=!ok;if(ok){await load();show("res")}}
+async function load(){const a=await sb.from("produits").select("*").order("nom"),b=await sb.from("clients").select("*").order("nom");
+ if(a.error)return msg(a.error.message);P=a.data;K=b.data||[];$("cl").innerHTML=K.map(c=>`<option value="${esc(c.nom)}">`).join("")}
+async function loadV(){const [a,b]=await Promise.all([sb.from("ventes").select("*,vente_lignes(*),paiements_dette(montant,created_at),clients(nom)").order("created_at",{ascending:false}).limit(1000),sb.from("depenses").select("*").order("created_at",{ascending:false}).limit(1000)]);
+ if(a.error||b.error)return msg((a.error||b.error).message);V=a.data;D=b.data}
+const T=["res","vente","stock","dettes","dep","hist"];
+async function show(t){T.forEach(x=>{$("s-"+x).hidden=x!=t;$("n-"+x).classList.toggle("on",x==t)});scrollTo(0,0);await({res:rr,vente:rv,stock:rs,dettes:rdt,dep:rde,hist:rh})[t]()}
+/* Résumé */
+async function rr(){await loadV();const n=new Date(),same=(x,d)=>{const t=new Date(x);return t.getFullYear()==n.getFullYear()&&t.getMonth()==n.getMonth()&&(!d||t.getDate()==n.getDate())},
+ ca=l=>S(l,v=>+v.montant_total),mg=l=>S(l,v=>S(v.vente_lignes,z=>+z.marge)),
+ vm=V.filter(v=>same(v.created_at)),vd=V.filter(v=>same(v.created_at,1)),dm=S(D.filter(d=>same(d.created_at)),d=>+d.montant),
+ c=(a,b)=>`<div class="st"><span>${a}</span><b>${b}</b></div>`,lw=P.filter(p=>p.stock<=p.stock_alerte);
+ $("rsm").innerHTML=`<div class="g2">${c("Chiffre d'affaires du jour",F(ca(vd)))}${c("Chiffre d'affaires du mois",F(ca(vm)))}${c("Marge du jour",F(mg(vd)))}${c("Marge du mois",F(mg(vm)))}${c("Dépenses du mois",F(dm))}${c("Bénéfice net du mois",F(mg(vm)-dm))}${c("Nombre de ventes (jour)",vd.length)}${c("Nombre de ventes (mois)",vm.length)}${c("Stock disponible",S(P,p=>+p.stock)+" articles")}${c("Valeur du stock",F(S(P,p=>p.stock*p.prix_achat)))}${c("Produits en stock faible",lw.length)}${c("Total des dettes clients",F(S(V,rest)))}</div>`+(lw.length?`<div class="card"><h2>Stock faible</h2>${lw.map(p=>`<div class="it top"><span>⚠️ ${esc(p.nom)}</span><b class="bad">${p.stock} ${esc(p.unite)}</b></div>`).join("")}</div>`:"")+`<button class="btn ol" onclick="sb.auth.signOut().then(start)">Se déconnecter</button>`}
+/* Vente */
+function rq(){const q=$("q").value.trim().toLowerCase();
+ $("res").innerHTML=q?P.filter(p=>(p.nom+" "+(p.categorie||"")+" "+(p.code_barres||"")).toLowerCase().includes(q)).slice(0,8).map(p=>`<button class="btn ol" style="text-align:left" onclick="pick('${p.id}')">${esc(p.nom)} · ${p.stock} ${esc(p.unite)}</button>`).join("")||'<p class="mut">Aucun produit trouvé.</p>':""}
+function pick(id){sel=P.find(p=>p.id==id);$("pickc").hidden=false;$("pn").textContent=sel.nom;$("pi").textContent=`Stock : ${sel.stock} ${sel.unite} · Prix d'achat : ${F(sel.prix_achat)}`;$("pq").value=1;$("pp").value=sel.prix_vente;$("q").value="";$("res").innerHTML="";pm()}
+function pm(){if(!sel)return;const g=($("pp").value-sel.prix_achat)*$("pq").value;$("pg").textContent=F(g);$("pg").className=g<0?"bad":"ok"}
+function toCart(){const q=+$("pq").value,pv=+$("pp").value;if(!sel||!(q>0))return msg("Écris la quantité");
+ if(q+S(C.filter(c=>c.id==sel.id),c=>c.q)>sel.stock)return msg("Stock insuffisant : il reste "+sel.stock+" "+sel.unite);
+ C.push({id:sel.id,nom:sel.nom,q,pv,pa:+sel.prix_achat});sel=null;$("pickc").hidden=true;rcart()}
+function rcart(){$("cart").innerHTML=C.map((c,i)=>`<div class="it"><div class="top"><b>${esc(c.nom)}</b><button class="btn rd sm" onclick="C.splice(${i},1);rcart()">✕</button></div><div class="line" style="margin:8px 0"><span class="mut">Qté</span><input type="number" inputmode="decimal" value="${c.q}" onchange="cq(${i},this.value)"><span class="mut">Prix</span><input type="number" inputmode="numeric" value="${c.pv}" onchange="cp(${i},this.value)"></div><div class="mut">${c.q} × ${F(c.pv)} = ${F(c.q*c.pv)}</div><div class="mut">Marge : ${F((c.pv-c.pa)*c.q)}</div></div>`).join("")||'<p class="mut" style="text-align:center">Panier vide.</p>';$("tot").textContent=F(S(C,c=>c.q*c.pv))}
+function cq(i,v){v=+v;const p=P.find(x=>x.id==C[i].id),o=S(C.filter((c,j)=>j!=i&&c.id==C[i].id),c=>c.q);if(!(v>0))return rcart();if(v+o>p.stock){msg("Stock insuffisant : il reste "+p.stock+" "+p.unite);return rcart()}C[i].q=v;rcart()}
+function cp(i,v){C[i].pv=Math.max(0,+v||0);rcart()}
+function rv(){rq();rcart()}
+function ct(){$("cb").hidden=$("ty").value!="credit"}
+async function sell(){if(!C.length)return msg("Ajoute d'abord un produit au panier");
+ const Tt=S(C,c=>c.q*c.pv),cr=$("ty").value=="credit",name=$("cn").value.trim();
+ if(cr&&!name)return msg("Écris le nom du client pour une vente à crédit");
+ const paid=cr?Math.min(Tt,+$("ac").value||0):Tt;let cid=null;
+ if(name){let c=K.find(x=>x.nom.toLowerCase()==name.toLowerCase());if(!c){const r=await sb.from("clients").insert({nom:name}).select().single();if(r.error)return msg(r.error.message);c=r.data}cid=c.id}
+ const {data:v,error}=await sb.from("ventes").insert({client_id:cid,moyen_paiement:$("pay").value,montant_total:Tt,montant_paye:paid}).select().single();if(error)return msg(error.message);
+ const r=await sb.from("vente_lignes").insert(C.map(c=>({vente_id:v.id,produit_id:c.id,produit_nom:c.nom,quantite:c.q,prix_achat:c.pa,prix_vente:c.pv})));if(r.error)return msg(r.error.message);
+ for(const c of C){const p=P.find(x=>x.id==c.id);p.stock-=c.q;await sb.from("produits").update({stock:p.stock}).eq("id",c.id)}
+ C=[];$("cn").value="";$("ac").value="";$("ty").value="paid";ct();await load();rv();msg(cr&&paid<Tt?"Vente à crédit enregistrée. Reste : "+F(Tt-paid):"Vente enregistrée")}
+/* Stock */
+function rs(){const q=$("sq").value.trim().toLowerCase(),L=P.filter(p=>!q||(p.nom+" "+(p.categorie||"")+" "+(p.code_barres||"")).toLowerCase().includes(q));
+ $("sh").textContent=`Mes produits (${P.length})`;
+ $("sl").innerHTML=L.map(p=>{const lw=p.stock<=p.stock_alerte;return `<div class="it"><div class="top"><b>${esc(p.nom)}</b><span class="${lw?"bad":"ok"}">${p.stock} ${esc(p.unite)}</span></div><div class="mut">Achat ${F(p.prix_achat)} · Vente ${F(p.prix_vente)}${lw?' · <b class="bad">Stock faible</b>':""}</div><div class="line" style="margin-top:10px"><input id="aq-${p.id}" type="number" inputmode="decimal" placeholder="+ qté"><button class="btn sm" onclick="addQ('${p.id}')">Ajouter</button><button class="btn ol sm" onclick="editP('${p.id}')">Modifier</button><button class="btn rd sm" onclick="delP('${p.id}')">Suppr.</button></div></div>`}).join("")||'<p class="mut">Aucun produit pour le moment.</p>'}
+async function saveP(){const g=i=>$(i).value.trim(),n=g("f-n");if(!n)return msg("Écris le nom du produit");
+ const o={nom:n,categorie:g("f-c")||null,code_barres:g("f-b")||null,unite:$("f-u").value,prix_achat:+g("f-a")||0,prix_vente:+g("f-v")||0,stock:+g("f-s")||0,stock_alerte:+g("f-l")||0};
+ const r=eid?await sb.from("produits").update(o).eq("id",eid):await sb.from("produits").insert(o);
+ if(r.error)return msg(r.error.code=="23505"?"Ce code-barres existe déjà":r.error.message);
+ msg(eid?"Produit modifié":"Produit ajouté");resetF();await load();rs()}
+function editP(id){const p=P.find(x=>x.id==id);eid=id;[["f-n",p.nom],["f-c",p.categorie||""],["f-b",p.code_barres||""],["f-a",p.prix_achat],["f-v",p.prix_vente],["f-s",p.stock],["f-l",p.stock_alerte]].forEach(([i,v])=>$(i).value=v);
+ $("f-u").value=p.unite;$("fh").textContent="Modifier le produit";$("f-ok").textContent="Enregistrer les modifications";$("f-x").hidden=false;scrollTo(0,0)}
+function resetF(){eid=null;["f-n","f-c","f-b","f-a","f-v","f-s"].forEach(i=>$(i).value="");$("f-l").value=5;$("f-u").value="pièce";$("fh").textContent="Ajouter un produit";$("f-ok").textContent="Ajouter le produit";$("f-x").hidden=true}
+async function delP(id){const p=P.find(x=>x.id==id);if(!confirm("Supprimer "+p.nom+" ? L'historique de ses ventes est conservé."))return;
+ const r=await sb.from("produits").delete().eq("id",id);if(r.error)return msg(r.error.message);await load();rs()}
+async function addQ(id){const q=+$("aq-"+id).value;if(!(q>0))return msg("Écris la quantité à ajouter");const p=P.find(x=>x.id==id);
+ const r=await sb.from("produits").update({stock:+p.stock+q}).eq("id",id);if(r.error)return msg(r.error.message);await load();rs();msg("Stock mis à jour")}
+/* Dettes */
+async function rdt(){await loadV();const M={},Z={};V.forEach(v=>{if(!v.client_id)return;const r=rest(v);if(r>0)(M[v.client_id]=M[v.client_id]||{n:v.clients?.nom,t:0}).t+=r;if(v.montant_paye<v.montant_total)Z[v.client_id]=v.clients?.nom});
+ const L=Object.entries(M);$("dtt").textContent=F(S(L,([,x])=>x.t));
+ $("dl").innerHTML=L.map(([id,x])=>`<div class="it"><div class="top"><b>${esc(x.n)}</b><b class="bad">${F(x.t)}</b></div><div class="line" style="margin-top:10px"><input id="dp-${id}" type="number" inputmode="numeric" placeholder="Montant"><button class="btn sm" onclick="encaisser('${id}',false)">Encaisser</button><button class="btn ol sm" onclick="encaisser('${id}',true)">Tout payé</button></div></div>`).join("")||'<p class="mut">Aucune dette pour le moment. 🎉</p>';
+ $("ds").innerHTML=Object.entries(Z).filter(([id])=>!M[id]).map(([id,n])=>`<div class="it top"><b>${esc(n)}</b><b class="ok">✅ Tout payé</b></div>`).join("")||'<p class="mut">Aucune dette soldée pour le moment.</p>';
+ const R2=[];V.forEach(v=>(v.paiements_dette||[]).forEach(p=>R2.push({n:v.clients?.nom,m:p.montant,d:p.created_at})));R2.sort((a,b)=>new Date(b.d)-new Date(a.d));
+ $("dr").innerHTML=R2.map(x=>`<div class="it top"><span><b>${esc(x.n)}</b><br><span class="mut">${dt(x.d)}</span></span><b class="ok">+ ${F(x.m)}</b></div>`).join("")||'<p class="mut">Aucun remboursement pour le moment.</p>'}
+async function encaisser(id,all){const mine=V.filter(v=>v.client_id==id),due=S(mine,rest);let m=all?due:+$("dp-"+id).value;if(!(m>0))return msg("Écris le montant");if(m>due)m=due;
+ let left=m;const rows=[];for(const v of [...mine].reverse()){const r=rest(v);if(r>0&&left>0){const a=Math.min(r,left);rows.push({vente_id:v.id,montant:a});left-=a}}
+ const r=await sb.from("paiements_dette").insert(rows);if(r.error)return msg(r.error.message);msg("Paiement de "+F(m)+" enregistré");rdt()}
+/* Dépenses */
+async function rde(){await loadV();if(!$("dd").value)$("dd").value=td();$("dh").textContent=`Dépenses (${D.length})`;
+ $("dlist").innerHTML=D.map(d=>`<div class="it line"><div style="flex:1"><b>${esc(d.type)}</b> · ${F(d.montant)}${d.note?` · <span class="mut">${esc(d.note)}</span>`:""}<div class="mut">${dt(d.created_at)}</div></div><button class="btn rd sm" onclick="delD('${d.id}')">✕</button></div>`).join("")||'<p class="mut">Aucune dépense pour le moment.</p>'}
+async function addD(){const m=+$("dm").value;if(!(m>0))return msg("Écris le montant");
+ const {error}=await sb.from("depenses").insert({type:$("dy").value,montant:m,note:$("dn").value.trim()||null,created_at:$("dd").value&&$("dd").value!=td()?new Date($("dd").value+"T12:00:00").toISOString():undefined});if(error)return msg(error.message);
+ $("dm").value="";$("dn").value="";$("dd").value=td();msg("Dépense enregistrée");rde()}
+async function delD(id){if(!confirm("Supprimer cette dépense ?"))return;await sb.from("depenses").delete().eq("id",id);rde()}
+/* Historique */
+async function rh(){await loadV();$("hh").textContent=`Historique des ventes (${V.length})`;
+ $("hl").innerHTML=V.map(v=>{const r=rest(v),cr=r>0;return v.vente_lignes.map((l,i)=>`<div class="it"><div class="top"><b>${esc(l.produit_nom)}</b><b>${F(l.quantite*l.prix_vente)}</b></div><div class="mut">Quantité : ${l.quantite} · Prix vendu : ${F(l.prix_vente)}</div><div class="mut">Marge : <b class="${l.marge<0?"bad":"ok"}">${F(l.marge)}</b> · ${cr?"À crédit":esc(v.moyen_paiement)}${v.clients?" · "+esc(v.clients.nom):""}${i==0&&cr?` · <b class="bad">reste ${F(r)}</b>`:""}</div><div class="mut">${dt(v.created_at)}</div></div>`).join("")}).join("")||'<p class="mut">Aucune vente pour le moment.</p>'}
+/* Scan */
+async function scan(mode){if(!("BarcodeDetector" in window))return msg("Scan indisponible sur ce navigateur : tape le code");
+ const d=new BarcodeDetector(),v=$("vid");
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});$("cam").hidden=false;halt=false;v.srcObject=stream;await v.play()}catch(e){return msg("Caméra refusée")}
+ while(!halt){const r=await d.detect(v).catch(()=>[]);
+  if(r.length){const c=r[0].rawValue;closeCam();
+   if(mode=="f")$("f-b").value=c;else{const p=P.find(x=>x.code_barres==c);if(p)pick(p.id);else{msg("Code "+c+" inconnu : ajoute le produit dans Stock");$("q").value=c;rq()}}return}
+  await new Promise(r=>setTimeout(r,300))}}
+function closeCam(){halt=true;stream&&stream.getTracks().forEach(t=>t.stop());$("cam").hidden=true}
+start();
+</script></body></html>
