@@ -159,8 +159,25 @@ async function addD(){const m=+$("dm").value;if(!(m>0))return msg("Écris le mon
  $("dm").value="";$("dn").value="";$("dd").value=td();msg("Dépense enregistrée");rde()}
 async function delD(id){if(!confirm("Supprimer cette dépense ?"))return;await sb.from("depenses").delete().eq("id",id);rde()}
 /* Historique */
+async function annulerV(id){
+  const v=V.find(x=>x.id==id);if(!v)return;
+  if(!confirm("Annuler cette vente ? Le stock sera remis."))return;
+  const lignes=v.vente_lignes||[];
+  let r=await sb.from("paiements_dette").delete().eq("vente_id",id);
+  if(r.error)return msg(r.error.message);
+  r=await sb.from("vente_lignes").delete().eq("vente_id",id);
+  if(r.error)return msg(r.error.message);
+  r=await sb.from("ventes").delete().eq("id",id);
+  if(r.error)return msg(r.error.message);
+  for(const l of lignes){
+    const p=P.find(x=>x.id==l.produit_id);if(!p)continue;
+    await sb.from("produits").update({stock:Number(p.stock)+Number(l.quantite)}).eq("id",p.id);
+  }
+  msg("Vente annulée");await load();await rh();
+}
 async function rh(){await loadV();$("hh").textContent=`Historique des ventes (${V.length})`;
- $("hl").innerHTML=V.map(v=>{const r=rest(v),cr=r>0;return v.vente_lignes.map((l,i)=>`<div class="it"><div class="top"><b>${esc(l.produit_nom)}</b><b>${F(l.quantite*l.prix_vente)}</b></div><div class="mut">Quantité : ${l.quantite} · Prix vendu : ${F(l.prix_vente)}</div><div class="mut">Marge : <b class="${l.marge<0?"bad":"ok"}">${F(l.marge)}</b> · ${cr?"À crédit":esc(v.moyen_paiement)}${v.clients?" · "+esc(v.clients.nom):""}${i==0&&cr?` · <b class="bad">reste ${F(r)}</b>`:""}</div><div class="mut">${dt(v.created_at)}</div></div>`).join("")}).join("")||'<p class="mut">Aucune vente pour le moment.</p>'}
+ $("hl").innerHTML=V.map(v=>{const r=rest(v),cr=r>0;return v.vente_lignes.map((l,i)=>`<div class="it"><div class="top"><b>${esc(l.produit_nom)}</b><b>${F(l.quantite*l.prix_vente)}</b></div><div class="mut">Quantité : ${l.quantite} · Prix vendu : ${F(l.prix_vente)}</div><div class="mut">Marge : <b class="${l.marge<0?"bad":"ok"}">${F(l.marge)}</b> · ${cr?"À crédit":esc(v.moyen_paiement)}${v.clients?" · "+esc(v.clients.nom):""}${i==0&&cr?` · <b class="bad">reste ${F(r)}</b>`:""}</div><div class="mut">${dt(v.created_at)}</div>${i==0?`<button class="btn rd sm" style="margin-top:8px" onclick="annulerV('${v.id}')">Annuler la vente</button>`:""}</div>`).join("")}).join("")||'<p class="mut">Aucune vente pour le moment.</p>'}
+ 
 /* Scan */
 async function scan(mode){if(!("BarcodeDetector" in window))return msg("Scan indisponible sur ce navigateur : tape le code");
  const d=new BarcodeDetector(),v=$("vid");
