@@ -331,7 +331,35 @@ async function scan(mode){if(!("BarcodeDetector" in window))return msg("Scan ind
    if(mode=="f")$("f-b").value=c;else{const p=P.find(x=>x.code_barres==c);if(p)pick(p.id);else{msg("Code "+c+" inconnu : ajoute le produit dans Stock");$("q").value=c;rq()}}return}
   await new Promise(r=>setTimeout(r,300))}}
 function closeCam(){halt=true;stream&&stream.getTracks().forEach(t=>t.stop());$("cam").hidden=true}
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
-start();
+ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+verifAbo=async function(){
+  const {data:{session}}=await sb.auth.getSession();
+  let b=$("abo");
+  if(!b){b=document.createElement("div");b.id="abo";document.querySelector("#ap .w").prepend(b)}
+  let p=$("paywall");
+  if(!p){p=document.createElement("div");p.id="paywall";p.hidden=true;p.style.cssText="position:fixed;inset:0;background:var(--bg);z-index:7;overflow:auto;padding:20px 16px 100px";document.body.appendChild(p)}
+  if(!session){b.innerHTML="";p.hidden=true;return}
+  const {data,error}=await sb.from("shops").select("essai_fin,abonnement_fin,plan").maybeSingle();
+  if(error||!data){b.innerHTML="";p.hidden=true;return}
+  const now=Date.now(),e=new Date(data.essai_fin).getTime(),a=data.abonnement_fin?new Date(data.abonnement_fin).getTime():0;
+  const jours=Math.ceil((Math.max(e,a)-now)/864e5),seller=ROLE==="seller";
+  if(jours>0){
+    p.hidden=true;
+    if(seller){b.innerHTML="";return}
+    b.innerHTML=a>now
+      ?`<div class="card" style="padding:14px 18px">✅ Abonnement actif jusqu'au <b>${new Date(a).toLocaleDateString("fr-FR")}</b></div>`
+      :`<div class="card" style="padding:14px 18px">🎁 Essai gratuit : <b>${jours} jour${jours>1?"s":""}</b> restant${jours>1?"s":""}</div>`;
+    return}
+  b.innerHTML="";p.hidden=false;
+  if(seller){
+    p.innerHTML=`<div class="w"><h1>Abonnement expiré</h1><p class="sub">L'abonnement de la boutique est terminé. Préviens ton patron pour qu'il le renouvelle.</p><button class="btn ol" onclick="verifAbo()">Actualiser</button><button class="btn ol" onclick="sb.auth.signOut().then(start)">Se déconnecter</button></div>`;
+    return}
+  p.innerHTML=`<div class="w"><h1>Ton essai est terminé</h1><p class="sub">Choisis une offre pour continuer à utiliser Mon commerce. Tes données sont conservées.</p>
+  <div class="card"><div class="it top"><span>1 mois</span><b>2 000 FCFA</b></div><div class="it top"><span>3 mois</span><b>5 000 FCFA</b></div><div class="it top"><span>6 mois</span><b>9 000 FCFA</b></div><div class="it top"><span>1 an</span><b>15 000 FCFA</b></div></div>
+  <div class="card"><b>Comment payer</b><p class="mut">Envoie le montant par Wave au <b>76 191 16 09</b> ou par Orange Money au <b>77 824 81 26</b>, puis envoie la preuve de paiement avec ton email de compte (${esc(session.user.email)}). Ton abonnement sera activé rapidement.</p></div>
+  <button class="btn ol" onclick="verifAbo()">J'ai payé : actualiser</button>
+  <button class="btn ol" onclick="sb.auth.signOut().then(start)">Se déconnecter</button></div>`;
+};
+ start();
 </script></body></html>
 
