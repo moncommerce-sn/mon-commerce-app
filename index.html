@@ -205,6 +205,78 @@ async function verifAbo(){
 }
 const start0=start;
 start=async function(){await start0();await verifAbo()};
+ let ROLE=null;
+async function chargerRole(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){ROLE=null;return}
+  const {data}=await sb.from("shop_members").select("role").eq("user_id",session.user.id).maybeSingle();
+  ROLE=data?data.role:null;
+}
+const start1=start;
+start=async function(){await chargerRole();await start1()};
+
+const em0=$("em");em0.type="text";em0.placeholder="Email (patron) ou identifiant (vendeur)";
+const auth0=auth;
+auth=function(up){
+  const e=$("em"),v=e.value.trim();
+  if(v&&!v.includes("@")){
+    if(up)return msg("Pour créer un compte, écris ton email");
+    e.value=v.toLowerCase()+"@vendeurs.moncommerce.sn";
+  }
+  const p=auth0(up);e.value=v;return p;
+};
+
+const rr0=rr;
+rr=async function(){
+  await rr0();
+  if(ROLE==="owner")$("rsm").insertAdjacentHTML("beforeend",'<button class="btn" style="margin-top:12px" onclick="show(\'eq\')">👥 Mon équipe</button>');
+};
+
+const show0=show;
+show=async function(t){
+  let s=$("s-eq");
+  if(!s){s=document.createElement("section");s.id="s-eq";s.hidden=true;document.querySelector("#ap .w").appendChild(s)}
+  if(t==="eq"){
+    if(ROLE!=="owner")return;
+    T.forEach(x=>{$("s-"+x).hidden=true;$("n-"+x).classList.remove("on")});
+    s.hidden=false;scrollTo(0,0);await rEq();return;
+  }
+  s.hidden=true;await show0(t);
+};
+
+async function eqCall(body){
+  const {data,error}=await sb.functions.invoke("gerer-equipe",{body});
+  if(error){let m=error.message;try{const j=await error.context.json();if(j&&j.error)m=j.error}catch(e){}return {error:m}}
+  return data||{};
+}
+async function rEq(){
+  const s=$("s-eq");
+  s.innerHTML='<div class="card"><h2>Mon équipe</h2><p class="mut">Chargement…</p></div>';
+  const r=await eqCall({action:"lister"});
+  if(r.error){s.innerHTML='<div class="card"><h2>Mon équipe</h2><p class="bad">'+esc(r.error)+'</p></div><button class="btn ol" onclick="show(\'res\')">← Retour au Résumé</button>';return}
+  const L=r.vendeurs||[],act=L.filter(v=>v.status==="active").length;
+  s.innerHTML=`<div class="card"><h2>Mon équipe (${act}/${r.max})</h2>`+
+  (L.map(v=>{const a=v.status==="active";return `<div class="it"><div class="top"><b>${esc(v.nom||"")}</b><span class="${a?"ok":"bad"}">${a?"Actif":"Inactif"}</span></div><div class="mut">Identifiant : ${esc(v.identifiant)}</div><div class="line" style="margin-top:10px"><button class="btn ol sm" onclick="eqMdp('${v.user_id}')">Mot de passe</button><button class="btn ${a?"rd":""} sm" onclick="eqEtat('${v.user_id}','${a?"desactiver":"reactiver"}')">${a?"Désactiver":"Réactiver"}</button></div></div>`}).join("")||'<p class="mut">Aucun vendeur pour le moment.</p>')+
+  `</div><div class="card"><h2>Ajouter un vendeur</h2><label>Nom du vendeur</label><input id="eq-n"><label>Identifiant de connexion (sans espace)</label><input id="eq-i" autocapitalize="none"><label>Mot de passe provisoire (6 caractères minimum)</label><input id="eq-m"><button class="btn" onclick="eqAdd()">Ajouter le vendeur</button><p class="mut">Le vendeur se connecte avec cet identifiant et ce mot de passe, sur son propre téléphone.</p></div><button class="btn ol" onclick="show('res')">← Retour au Résumé</button>`;
+}
+async function eqAdd(){
+  const r=await eqCall({action:"ajouter",nom:$("eq-n").value,identifiant:$("eq-i").value,mot_de_passe:$("eq-m").value});
+  if(r.error)return msg(r.error);
+  msg("Vendeur ajouté");rEq();
+}
+async function eqEtat(id,a){
+  if(!confirm(a==="desactiver"?"Désactiver ce vendeur ? Il ne pourra plus se connecter. Ses ventes sont conservées.":"Réactiver ce vendeur ?"))return;
+  const r=await eqCall({action:a,user_id:id});
+  if(r.error)return msg(r.error);
+  msg("Mise à jour effectuée");rEq();
+}
+async function eqMdp(id){
+  const m=prompt("Nouveau mot de passe (6 caractères minimum)");
+  if(!m)return;
+  const r=await eqCall({action:"mot_de_passe",user_id:id,mot_de_passe:m});
+  if(r.error)return msg(r.error);
+  msg("Mot de passe changé");
+   }
 /* Scan */
 async function scan(mode){if(!("BarcodeDetector" in window))return msg("Scan indisponible sur ce navigateur : tape le code");
  const d=new BarcodeDetector(),v=$("vid");
