@@ -277,6 +277,51 @@ async function eqMdp(id){
   if(r.error)return msg(r.error);
   msg("Mot de passe changé");
    }
+ function appliquerRole(){
+  const v=ROLE==="seller";
+  $("n-dettes").hidden=v;$("n-dep").hidden=v;
+  $("n-res").textContent=v?"Mes ventes":"Résumé";
+}
+const start2=start;
+start=async function(){await start2();appliquerRole()};
+
+const rr1=rr;
+rr=async function(){
+  if(ROLE!=="seller")return rr1();
+  await loadV();
+  const n=new Date(),same=(x,d)=>{const t=new Date(x);return t.getFullYear()==n.getFullYear()&&t.getMonth()==n.getMonth()&&(!d||t.getDate()==n.getDate())},
+  vm=V.filter(v=>same(v.created_at)),vd=V.filter(v=>same(v.created_at,1)),
+  ca=l=>S(l,v=>+v.montant_total),
+  c=(a,b)=>`<div class="st"><span>${a}</span><b>${b}</b></div>`;
+  $("rsm").innerHTML=`<div class="g2">${c("Mes ventes du jour",F(ca(vd)))}${c("Mes ventes du mois",F(ca(vm)))}${c("Nombre de ventes (jour)",vd.length)}${c("Nombre de ventes (mois)",vm.length)}</div><button class="btn ol" onclick="sb.auth.signOut().then(start)">Se déconnecter</button>`;
+};
+function cacherCouts(){
+  if(ROLE!=="seller")return;
+  const pg=$("pg");if(pg&&pg.parentElement)pg.parentElement.hidden=true;
+  const pi=$("pi");if(pi)pi.textContent=pi.textContent.replace(/\s*·\s*Prix d'achat[^·]*$/,"");
+  $("cart").querySelectorAll(".mut").forEach(d=>{if(d.textContent.startsWith("Marge"))d.hidden=true});
+}
+const pick0=pick;
+pick=function(id){pick0(id);cacherCouts()};
+const rcart0=rcart;
+rcart=function(){rcart0();cacherCouts()};
+
+const rs0=rs;
+rs=function(){
+  rs0();
+  if(ROLE!=="seller")return;
+  const c=document.querySelector("#s-stock .card");if(c)c.hidden=true;
+  $("sl").querySelectorAll(".line").forEach(l=>l.remove());
+  $("sl").querySelectorAll(".mut").forEach(d=>{d.innerHTML=d.innerHTML.replace(/Achat [^·]*·\s*/,"")});
+};
+
+const rh1=rh;
+rh=async function(){
+  await rh1();
+  if(ROLE!=="seller")return;
+  $("hl").querySelectorAll(".btn.rd").forEach(b=>b.remove());
+  $("hl").querySelectorAll(".mut").forEach(d=>{if(d.textContent.startsWith("Marge"))d.textContent=d.textContent.replace(/^Marge : [^·]*·\s*/,"")});
+};
 /* Scan */
 async function scan(mode){if(!("BarcodeDetector" in window))return msg("Scan indisponible sur ce navigateur : tape le code");
  const d=new BarcodeDetector(),v=$("vid");
