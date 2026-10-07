@@ -35,4 +35,6 @@ async function charger(){
  '<h2>Ventes enregistrées</h2><div class="g2">'+c("Aujourd'hui",data.ventes_aujourdhui)+c("7 derniers jours",data.ventes_7j)+c("30 derniers jours",data.ventes_30j)+c("Total",data.ventes_total)+'</div>'+
  '<h2>Commerces actifs (au moins une vente)</h2><div class="g2">'+c("7 derniers jours",data.commerces_actifs_7j)+c("30 derniers jours",data.commerces_actifs_30j)+'</div>'}
 charger();
+document.title="Admin · TAÏF Marchand";
+document.querySelector(".sub").textContent="Statistiques de TAÏF Marchand, totaux seulement";
 </script></body></html>
