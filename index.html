@@ -428,6 +428,12 @@ async function savePw(){
 }
 document.title="TAÏF Marchand";
 document.querySelectorAll("h1").forEach(function(h){if(h.textContent.trim()==="Mon commerce")h.textContent="TAÏF Marchand"});
+const vAbo0=verifAbo;
+verifAbo=async function(){
+  await vAbo0();
+  const p=$("paywall");
+  if(p)p.innerHTML=p.innerHTML.split("Mon commerce").join("TAÏF Marchand");
+};
 </script></body></html>
 
 
