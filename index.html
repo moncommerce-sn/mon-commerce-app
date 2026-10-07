@@ -426,5 +426,8 @@ async function savePw(){
   if(error)return msg(error.message);
   $("recup").hidden=true;msg("Mot de passe changé");
 }
+document.title="TAÏF Marchand";
+document.querySelectorAll("h1").forEach(function(h){if(h.textContent.trim()==="Mon commerce")h.textContent="TAÏF Marchand"});
 </script></body></html>
+
 
