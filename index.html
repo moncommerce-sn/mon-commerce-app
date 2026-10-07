@@ -399,5 +399,32 @@ const editP0=editP;
 editP=function(id){editP0(id);$("f-s").hidden=true;$("f-s").previousElementSibling.hidden=true;};
 const resetF0=resetF;
 resetF=function(){resetF0();$("f-s").hidden=false;$("f-s").previousElementSibling.hidden=false;};
+(function(){
+  const b=document.createElement("button");
+  b.className="btn ol";b.textContent="Mot de passe oublié ?";
+  b.onclick=async function(){
+    const v=$("em").value.trim();
+    if(!v)return msg("Écris ton email dans la case, puis appuie à nouveau");
+    if(!v.includes("@"))return msg("Vendeur : demande au patron de changer ton mot de passe dans Mon équipe");
+    const {error}=await sb.auth.resetPasswordForEmail(v,{redirectTo:location.origin+location.pathname});
+    if(error)return msg(error.message);
+    msg("Email envoyé. Ouvre le lien reçu.");
+  };
+  $("au").querySelector(".card").appendChild(b);
+})();
+sb.auth.onAuthStateChange(function(ev){
+  if(ev!=="PASSWORD_RECOVERY")return;
+  let d=$("recup");
+  if(!d){d=document.createElement("div");d.id="recup";d.style.cssText="position:fixed;inset:0;background:#eff5f0;z-index:20;overflow:auto";document.body.appendChild(d)}
+  d.hidden=false;
+  d.innerHTML='<div class="w"><h1>Nouveau mot de passe</h1><p class="sub">6 caractères minimum.</p><div class="card"><input id="np" type="password" placeholder="Nouveau mot de passe"><button class="btn" onclick="savePw()">Enregistrer</button></div></div>';
+});
+async function savePw(){
+  const p=$("np").value;
+  if(p.length<6)return msg("6 caractères minimum");
+  const {error}=await sb.auth.updateUser({password:p});
+  if(error)return msg(error.message);
+  $("recup").hidden=true;msg("Mot de passe changé");
+}
 </script></body></html>
 
