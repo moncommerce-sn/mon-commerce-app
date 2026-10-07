@@ -361,5 +361,16 @@ verifAbo=async function(){
   <button class="btn ol" onclick="sb.auth.signOut().then(start)">Se déconnecter</button></div>`;
 };
  start();
+sell=async function(){
+  if(!C.length)return msg("Ajoute d'abord un produit au panier");
+  const Tt=S(C,c=>c.q*c.pv),cr=$("ty").value=="credit",name=$("cn").value.trim();
+  if(cr&&!name)return msg("Écris le nom du client pour une vente à crédit");
+  const paid=cr?Math.min(Tt,+$("ac").value||0):Tt;
+  const lignes=C.map(c=>({produit_id:c.id,quantite:c.q,prix_vente:c.pv}));
+  const {error}=await sb.rpc("enregistrer_vente",{p_lignes:lignes,p_moyen:$("pay").value,p_client_nom:name,p_credit:cr,p_paye:paid});
+  if(error)return msg(error.message);
+  C=[];$("cn").value="";$("ac").value="";$("ty").value="paid";ct();await load();rv();
+  msg(cr&&paid<Tt?"Vente à crédit enregistrée. Reste : "+F(Tt-paid):"Vente enregistrée");
+};
 </script></body></html>
 
