@@ -386,5 +386,18 @@ addQ=async function(id){
   if(error)return msg(error.message);
   await load();rs();msg("Stock mis à jour");
 };
+saveP=async function(){
+  const g=i=>$(i).value.trim(),n=g("f-n");
+  if(!n)return msg("Écris le nom du produit");
+  const o={nom:n,categorie:g("f-c")||null,code_barres:g("f-b")||null,unite:$("f-u").value,prix_achat:+g("f-a")||0,prix_vente:+g("f-v")||0,stock_alerte:+g("f-l")||0};
+  if(!eid)o.stock=+g("f-s")||0;
+  const r=eid?await sb.from("produits").update(o).eq("id",eid):await sb.from("produits").insert(o);
+  if(r.error)return msg(r.error.code=="23505"?"Ce code-barres existe déjà":r.error.message);
+  msg(eid?"Produit modifié":"Produit ajouté");resetF();await load();rs();
+};
+const editP0=editP;
+editP=function(id){editP0(id);$("f-s").hidden=true;$("f-s").previousElementSibling.hidden=true;};
+const resetF0=resetF;
+resetF=function(){resetF0();$("f-s").hidden=false;$("f-s").previousElementSibling.hidden=false;};
 </script></body></html>
 
