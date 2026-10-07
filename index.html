@@ -372,5 +372,18 @@ sell=async function(){
   C=[];$("cn").value="";$("ac").value="";$("ty").value="paid";ct();await load();rv();
   msg(cr&&paid<Tt?"Vente à crédit enregistrée. Reste : "+F(Tt-paid):"Vente enregistrée");
 };
+annulerV=async function(id){
+  if(!confirm("Annuler cette vente ? Le stock sera remis."))return;
+  const {error}=await sb.rpc("annuler_vente",{p_id:id});
+  if(error)return msg(error.message);
+  msg("Vente annulée");await load();await rh();
+};
+addQ=async function(id){
+  const q=+$("aq-"+id).value;
+  if(!(q>0))return msg("Écris la quantité à ajouter");
+  const {error}=await sb.rpc("ajouter_stock",{p_id:id,p_qte:q});
+  if(error)return msg(error.message);
+  await load();rs();msg("Stock mis à jour");
+};
 </script></body></html>
 
