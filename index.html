@@ -693,6 +693,27 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
   maj();envoyer();
   setInterval(envoyer,30000);
 })();
+(function(){
+  const v0=verifAbo;
+  verifAbo=async function(){
+    await v0();
+    try{
+      const {data:s}=await sb.auth.getSession();
+      if(!s.session)return;
+      const {data}=await sb.from("shops").select("suspendu,suspendu_motif").maybeSingle();
+      let o=document.getElementById("susp");
+      if(!data||!data.suspendu){if(o)o.hidden=true;return;}
+      if(!o){
+        o=document.createElement("div");
+        o.id="susp";
+        o.style.cssText="position:fixed;inset:0;z-index:30;background:#eff5f0;overflow:auto";
+        document.body.appendChild(o);
+      }
+      o.hidden=false;
+      o.innerHTML='<div class="w"><h1>Compte suspendu</h1><p class="sub">'+esc(data.suspendu_motif||"Ton compte a été suspendu.")+'</p><div class="card"><p>Pour le réactiver, contacte-nous : <b>aliouseck123455@gmail.com</b></p><button class="btn ol" onclick="sb.auth.signOut().then(start)">Se déconnecter</button></div></div>';
+    }catch(e){}
+  };
+})();
 </script></body></html>
 
 
