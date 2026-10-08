@@ -443,6 +443,67 @@ verifAbo=async function(){
   $("au").querySelector(".card").appendChild(d);
 })();
 sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)caches.delete("taif-data");});
+(function(){
+  const KQ="taif-attente",KE="taif-echecs";
+  const lire=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch(e){return[]}};
+  const ecrire=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+  const rpc0=sb.rpc.bind(sb);
+  const bandeau=document.createElement("div");
+  bandeau.style.cssText="position:fixed;left:0;right:0;top:0;z-index:5;padding:6px 12px;text-align:center;font-size:.85rem;font-weight:700;color:#fff;background:#b8452a;display:none";
+  document.body.appendChild(bandeau);
+  function maj(){
+    const n=lire(KQ).length,off=!navigator.onLine;
+    if(!off&&!n){bandeau.style.display="none";return;}
+    bandeau.style.display="block";
+    bandeau.style.background=off?"#b8452a":"#e8a117";
+    bandeau.textContent=off?("Hors connexion"+(n?" · "+n+" vente(s) en attente":"")):(n+" vente(s) en cours d'envoi…");
+  }
+  sb.rpc=function(nom,args,opts){
+    if(nom==="enregistrer_vente"&&!navigator.onLine){
+      const q=lire(KQ);q.push({args:args,t:Date.now()});ecrire(KQ,q);maj();
+      setTimeout(()=>{try{msg("Vente enregistrée hors connexion. Envoi dès que le réseau revient.")}catch(e){}},80);
+      return Promise.resolve({data:null,error:null});
+    }
+    return rpc0(nom,args,opts);
+  };
+  const load0=load;
+  load=async function(){
+    await load0();
+    try{
+      const q=lire(KQ);
+      q.forEach(v=>{((v.args&&v.args.p_lignes)||[]).forEach(l=>{const p=P.find(x=>x.id===l.produit_id);if(p)p.stock=Number(p.stock)-Number(l.quantite);});});
+      if(q.length)rs();
+    }catch(e){}
+  };
+  let sync=false;
+  async function envoyer(){
+    if(sync||!navigator.onLine)return;
+    let q=lire(KQ);
+    if(!q.length){maj();return;}
+    const {data:s}=await sb.auth.getSession();
+    if(!s.session)return;
+    sync=true;let ok=0,ko=0,derniere="";
+    try{
+      while(q.length){
+        const it=q[0];
+        const {error}=await rpc0("enregistrer_vente",it.args);
+        if(error){
+          if(/fetch|network|load failed|jwt|token|auth/i.test(error.message||""))break;
+          const e=lire(KE);e.push({args:it.args,t:it.t,erreur:error.message});ecrire(KE,e);
+          ko++;derniere=error.message;q.shift();ecrire(KQ,q);continue;
+        }
+        q.shift();ecrire(KQ,q);ok++;
+      }
+    }catch(e){}
+    sync=false;maj();
+    if(ok){try{await load();rr();}catch(e){}try{msg(ok+" vente(s) envoyée(s)")}catch(e){}}
+    if(ko){try{msg(ko+" vente(s) refusée(s) : "+derniere)}catch(e){}}
+  }
+  addEventListener("online",()=>{maj();envoyer();});
+  addEventListener("offline",maj);
+  maj();envoyer();
+  setInterval(envoyer,30000);
+})();
 </script></body></html>
 
 
