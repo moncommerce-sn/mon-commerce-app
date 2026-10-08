@@ -436,6 +436,12 @@ verifAbo=async function(){
   const p=$("paywall");
   if(p)p.innerHTML=p.innerHTML.split("Mon commerce").join("TAÏF Marchand");
 };
+(function(){
+  const d=document.createElement("p");
+  d.style.cssText="text-align:center;font-size:.85rem;color:#5c7065;margin:14px 0 0";
+  d.innerHTML=`En continuant, tu acceptes nos <a href="conditions.html" target="_blank" style="color:#14513c">conditions d'utilisation</a> et notre <a href="confidentialite.html" target="_blank" style="color:#14513c">politique de confidentialité</a>.`;
+  $("au").querySelector(".card").appendChild(d);
+})();
 </script></body></html>
 
 
