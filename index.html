@@ -504,6 +504,195 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
   maj();envoyer();
   setInterval(envoyer,30000);
 })();
+(function(){
+  const KO="taif-ops",KE="taif-echecs",KOLD="taif-attente";
+  const lire=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]")}catch(e){return[]}};
+  const ecrire=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+  const reseau=m=>/fetch|network|load failed|timeout/i.test(m||"");
+  const uuid=()=>crypto.randomUUID();
+  const ID_TABLES=["produits","depenses","paiements_dette","clients"];
+  const WRITE=["insert","update","delete","upsert"];
+  const OK={data:null,error:null};
+  const gs=sb.auth.getSession.bind(sb.auth);
+  sb.auth.getSession=async function(){
+    const r=await gs();
+    if(r&&r.data&&r.data.session)return r;
+    if(!navigator.onLine){
+      try{
+        const s=JSON.parse(localStorage.getItem("sb-kqfhbxzcixcdcjcsvkla-auth-token")||"null");
+        if(s&&s.user)return{data:{session:s},error:null};
+      }catch(e){}
+    }
+    return r;
+  };
+  async function uid(){try{const {data}=await sb.auth.getSession();return data&&data.session?data.session.user.id:""}catch(e){return""}}
+  [...document.body.children].forEach(e=>{if(e.tagName==="DIV"&&e.style.position==="fixed"&&e.style.zIndex==="5"&&e.style.top==="0px")e.remove();});
+  const bandeau=document.createElement("div");
+  bandeau.style.cssText="position:fixed;left:0;right:0;top:0;z-index:5;padding:6px 12px;text-align:center;font-size:.85rem;font-weight:700;color:#fff;background:#b8452a;display:none";
+  document.body.appendChild(bandeau);
+  function maj(){
+    const n=lire(KO).length,off=!navigator.onLine;
+    if(!off&&!n){bandeau.style.display="none";return;}
+    bandeau.style.display="block";
+    bandeau.style.background=off?"#b8452a":"#e8a117";
+    bandeau.textContent=off?("Hors connexion"+(n?" · "+n+" action(s) en attente":"")):(n+" action(s) en cours d'envoi…");
+  }
+  async function empiler(it){
+    it.t=Date.now();it.i=uuid().slice(0,8);it.u=await uid();
+    const q=lire(KO);q.push(it);ecrire(KO,q);maj();
+    if(navigator.onLine)setTimeout(envoyer,400);
+    return{data:null,error:null};
+  }
+  const rpcBase=sb.rpc;
+  const RPCS=["enregistrer_vente","ajouter_stock","annuler_vente"];
+  sb.rpc=function(nom,args,opts){
+    if(!RPCS.includes(nom))return rpcBase(nom,args,opts);
+    return(async()=>{
+      args=args||{};
+      if(nom==="annuler_vente"&&String(args.p_id).startsWith("pending-")){
+        const q=lire(KO);
+        const i=q.findIndex(x=>x.k==="rpc"&&x.n==="enregistrer_vente"&&"pending-"+x.i===args.p_id);
+        if(i>=0){q.splice(i,1);ecrire(KO,q);maj();return OK;}
+        return{data:null,error:{message:"Vente déjà envoyée : actualise la page."}};
+      }
+      const it={k:"rpc",n:nom,a:args};
+      if(nom==="annuler_vente"){
+        const v=(Array.isArray(V)?V:[]).find(x=>x.id===args.p_id);
+        if(v)it.l=(v.vente_lignes||[]).map(l=>({produit_id:l.produit_id,quantite:l.quantite}));
+      }
+      if(lire(KO).length||!navigator.onLine)return empiler(it);
+      const res=await rpcBase(nom,args,opts);
+      if(res&&res.error&&reseau(res.error.message))return empiler(it);
+      return res;
+    })();
+  };
+  const fromBase=sb.from.bind(sb);
+  function construire(table,chaine){let b=fromBase(table);chaine.forEach(([m,a])=>{b=b[m](...a)});return b;}
+  async function executer(table,chaine){
+    const it={k:"db",tb:table,c:chaine};
+    if(table==="paiements_dette"&&chaine[0][0]==="insert"){
+      const rows=[].concat(chaine[0][1][0]);
+      if(rows.some(r=>String(r&&r.vente_id).startsWith("pending-")))
+        return{data:null,error:{message:"Cette vente n'est pas encore envoyée. Réessaie après le retour du réseau."}};
+    }
+    if(lire(KO).length||!navigator.onLine)return empiler(it);
+    const res=await construire(table,chaine);
+    if(res&&res.error&&reseau(res.error.message))return empiler(it);
+    return res;
+  }
+  function ecriture(table,op,a){
+    if(ID_TABLES.includes(table)&&op==="insert"&&a[0]){
+      const ajout=o=>(o&&typeof o==="object"&&!o.id)?Object.assign({id:uuid()},o):o;
+      a=[Array.isArray(a[0])?a[0].map(ajout):ajout(a[0])].concat(a.slice(1));
+    }
+    const chaine=[[op,a]];
+    let p=null;
+    const run=()=>p||(p=executer(table,chaine));
+    const o=new Proxy({},{get(_,k){
+      if(typeof k==="symbol")return undefined;
+      if(k==="then")return(res,rej)=>run().then(res,rej);
+      if(k==="catch")return rej=>run().catch(rej);
+      if(k==="finally")return f=>run().finally(f);
+      return(...x)=>{chaine.push([k,x]);return o;};
+    }});
+    return o;
+  }
+  sb.from=function(table){
+    const b=fromBase(table);
+    return new Proxy(b,{get(t,k){
+      if(WRITE.includes(k))return(...a)=>ecriture(table,k,a);
+      const v=t[k];return typeof v==="function"?v.bind(t):v;
+    }});
+  };
+  function surProduits(){
+    try{
+      if(!Array.isArray(P)||P.__ov)return;P.__ov=true;
+      lire(KO).forEach(it=>{
+        if(it.k==="db"&&it.tb==="produits"){
+          const op=it.c[0][0],a=it.c[0][1];
+          const ids=it.c.filter(c=>c[0]==="eq"&&c[1][0]==="id").map(c=>c[1][1]);
+          if(op==="insert")[].concat(a[0]).forEach(o=>{if(!P.find(p=>p.id===o.id))P.push(Object.assign({stock:0,stock_alerte:0,created_at:new Date(it.t).toISOString()},o));});
+          else if(op==="update")P.forEach(p=>{if(ids.includes(p.id))Object.assign(p,a[0]);});
+          else if(op==="delete")for(let i=P.length-1;i>=0;i--)if(ids.includes(P[i].id))P.splice(i,1);
+        }else if(it.k==="rpc"){
+          const a=it.a||{};
+          if(it.n==="ajouter_stock"){const p=P.find(x=>x.id===a.p_id);if(p)p.stock=Number(p.stock)+Number(a.p_qte);}
+          if(it.n==="enregistrer_vente"){
+            (a.p_lignes||[]).forEach(l=>{const p=P.find(x=>x.id===l.produit_id);if(p)p.stock=Number(p.stock)-Number(l.quantite);});
+            const nm=a.p_client_nom?String(a.p_client_nom).trim():"";
+            if(a.p_credit&&nm&&Array.isArray(K)&&!K.find(c=>String(c.nom).toLowerCase()===nm.toLowerCase()))K.push({id:"tmp:"+nm.toLowerCase(),nom:nm});
+          }
+          if(it.n==="annuler_vente")(it.l||[]).forEach(l=>{const p=P.find(x=>x.id===l.produit_id);if(p)p.stock=Number(p.stock)+Number(l.quantite);});
+        }
+      });
+      P.sort((x,y)=>String(x.nom).localeCompare(String(y.nom)));
+    }catch(e){}
+  }
+  function surVentes(){
+    try{
+      if(!Array.isArray(V)||V.__ov)return;V.__ov=true;
+      if(!Array.isArray(D))D=[];
+      lire(KO).forEach(it=>{
+        const a=it.a||{};
+        if(it.k==="rpc"&&it.n==="enregistrer_vente"){
+          const lg=(a.p_lignes||[]).map(l=>{
+            const p=(Array.isArray(P)?P:[]).find(x=>x.id===l.produit_id)||{};
+            const pa=Number(p.prix_achat)||0;
+            return{id:"pl-"+it.i+"-"+l.produit_id,vente_id:"pending-"+it.i,produit_id:l.produit_id,produit_nom:p.nom||"Produit",quantite:l.quantite,prix_achat:pa,prix_vente:l.prix_vente,marge:(Number(l.prix_vente)-pa)*Number(l.quantite)};
+          });
+          const total=lg.reduce((s,l)=>s+Number(l.prix_vente)*Number(l.quantite),0);
+          const kp=Object.keys(a).find(k=>!["p_lignes","p_moyen","p_client_nom","p_credit"].includes(k)&&typeof a[k]==="number");
+          const paye=a.p_credit?(kp?Number(a[kp]):0):total;
+          const nm=a.p_client_nom?String(a.p_client_nom).trim().toLowerCase():"";
+          const cl=nm&&Array.isArray(K)?K.find(c=>String(c.nom).toLowerCase()===nm):null;
+          V.unshift({id:"pending-"+it.i,client_id:cl?cl.id:null,moyen_paiement:a.p_moyen,montant_total:total,montant_paye:paye,created_at:new Date(it.t).toISOString(),vente_lignes:lg,paiements_dette:[]});
+        }else if(it.k==="rpc"&&it.n==="annuler_vente"){
+          const i=V.findIndex(v=>v.id===a.p_id);if(i>=0)V.splice(i,1);
+        }else if(it.k==="db"&&it.tb==="paiements_dette"&&it.c[0][0]==="insert"){
+          [].concat(it.c[0][1][0]).forEach(r=>{const v=V.find(x=>x.id===r.vente_id);if(v){(v.paiements_dette=v.paiements_dette||[]).push({montant:r.montant,created_at:new Date(it.t).toISOString()});}});
+        }else if(it.k==="db"&&it.tb==="depenses"){
+          const op=it.c[0][0],ids=it.c.filter(c=>c[0]==="eq"&&c[1][0]==="id").map(c=>c[1][1]);
+          if(op==="insert")[].concat(it.c[0][1][0]).forEach(o=>{if(!D.find(d=>d.id===o.id))D.unshift(Object.assign({created_at:new Date(it.t).toISOString()},o));});
+          else if(op==="delete")for(let i=D.length-1;i>=0;i--)if(ids.includes(D[i].id))D.splice(i,1);
+        }
+      });
+    }catch(e){}
+  }
+  const load1=load;load=async function(){await load1();surProduits();};
+  const loadV1=loadV;loadV=async function(){await loadV1();surVentes();};
+  let sync=false;
+  async function envoyer(){
+    if(sync||!navigator.onLine)return;
+    if(lire(KOLD).length)return;
+    if(!lire(KO).length){maj();return;}
+    const me=await uid();if(!me)return;
+    sync=true;let ok=0,ko=0,der="";
+    try{
+      for(;;){
+        let q=lire(KO);
+        const it=q.find(x=>!x.u||x.u===me);
+        if(!it)break;
+        let res;
+        try{res=it.k==="rpc"?await rpcBase(it.n,it.a):await construire(it.tb,it.c);}
+        catch(e){res={error:{message:String(e&&e.message||e)}};}
+        if(res&&res.error){
+          const m=res.error.message||"";
+          if(reseau(m)||/jwt|token/i.test(m))break;
+          if(res.error.code==="23505")ok++;
+          else{const e=lire(KE);e.push({it:it,erreur:m});ecrire(KE,e);ko++;der=m;}
+        }else ok++;
+        q=lire(KO);const j=q.findIndex(x=>x.i===it.i);if(j>=0)q.splice(j,1);ecrire(KO,q);
+      }
+    }catch(e){}
+    sync=false;maj();
+    if(ok){try{await load();await loadV();}catch(e){}try{rr();}catch(e){}try{rs();}catch(e){}try{msg(ok+" action(s) envoyée(s)")}catch(e){}}
+    if(ko){try{msg(ko+" action(s) refusée(s) : "+der)}catch(e){}}
+  }
+  addEventListener("online",()=>{maj();envoyer();});
+  addEventListener("offline",maj);
+  maj();envoyer();
+  setInterval(envoyer,30000);
+})();
 </script></body></html>
 
 
