@@ -103,4 +103,47 @@ document.querySelector(".sub").textContent="Statistiques de TAÏF Marchand, tota
   let n=0;
   const t=setInterval(async()=>{n++;if(await boutons()||n>12)clearInterval(t);},500);
 })();
+(function(){
+  const box=document.getElementById("bq");
+  async function suspension(){
+    const {data,error}=await sb.rpc("admin_boutiques");
+    if(error||!data)return false;
+    const cards=[...box.children].filter(e=>e.tagName==="DIV");
+    if(cards.length!==data.length)return false;
+    cards.forEach((c,i)=>{
+      const b=data[i];
+      if(c.querySelector(".sus"))return;
+      const w=document.createElement("div");
+      w.className="sus";
+      w.style.cssText="margin-top:10px";
+      if(b.suspendu){
+        const t=document.createElement("div");
+        t.style.cssText="color:#b8452a;font-weight:700;margin-bottom:8px";
+        t.textContent="SUSPENDU"+(b.suspendu_motif?" · "+b.suspendu_motif:"");
+        w.appendChild(t);
+      }
+      const x=document.createElement("button");
+      x.textContent=b.suspendu?"Réactiver ce compte":"Suspendre ce compte";
+      x.style.cssText="width:100%;padding:12px;border:1.5px solid #b8452a;border-radius:12px;background:#fff;color:#b8452a;font:inherit;font-weight:700";
+      x.onclick=async()=>{
+        let motif=null;
+        if(!b.suspendu){
+          motif=prompt("Motif de la suspension (affiché au commerçant) :","Abonnement non réglé");
+          if(motif===null)return;
+        }else if(!confirm("Réactiver « "+b.nom+" » ?"))return;
+        const {error:e}=await sb.rpc("admin_suspendre",{p_shop:b.id,p_suspendre:!b.suspendu,p_motif:motif});
+        if(e)return alert("Erreur : "+e.message);
+        alert(b.suspendu?"Compte réactivé":"Compte suspendu");
+        charger();
+      };
+      w.appendChild(x);
+      c.appendChild(w);
+    });
+    return true;
+  }
+  const charger2=charger;
+  charger=async function(){await charger2();await suspension();};
+  let n=0;
+  const t=setInterval(async()=>{n++;if(await suspension()||n>12)clearInterval(t);},500);
+})();
 </script></body></html>
