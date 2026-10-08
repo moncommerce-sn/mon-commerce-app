@@ -442,6 +442,7 @@ verifAbo=async function(){
   d.innerHTML=`En continuant, tu acceptes nos <a href="conditions.html" target="_blank" style="color:#14513c">conditions d'utilisation</a> et notre <a href="confidentialite.html" target="_blank" style="color:#14513c">politique de confidentialité</a>.`;
   $("au").querySelector(".card").appendChild(d);
 })();
+sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)caches.delete("taif-data");});
 </script></body></html>
 
 
