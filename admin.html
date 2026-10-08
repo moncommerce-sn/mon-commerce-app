@@ -37,4 +37,35 @@ async function charger(){
 charger();
 document.title="Admin · TAÏF Marchand";
 document.querySelector(".sub").textContent="Statistiques de TAÏF Marchand, totaux seulement";
+(function(){
+  const box=document.createElement("div");
+  box.id="bq";
+  document.getElementById("out").after(box);
+  const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+  const jour=d=>d?new Date(d).toLocaleDateString("fr-FR"):"-";
+  const lab={abonne:"Abonné",essai:"Essai gratuit",expire:"Expiré"};
+  const col={abonne:"#1f7a4d",essai:"#e8a117",expire:"#b8452a"};
+  async function boutiques(){
+    const {data:s}=await sb.auth.getSession();
+    if(!s.session){box.innerHTML="";return;}
+    const {data,error}=await sb.rpc("admin_boutiques");
+    if(error||!data){box.innerHTML="";return;}
+    const n=k=>data.filter(b=>b.statut===k).length;
+    let h='<h2>Boutiques ('+data.length+')</h2><p class="sub">'+n("abonne")+' abonnée(s), '+n("essai")+' en essai, '+n("expire")+' expirée(s)</p>';
+    data.forEach(b=>{
+      const fin=b.statut==="essai"?b.essai_fin:b.abonnement_fin;
+      h+='<div style="background:#fff;border:1px solid var(--ln);border-radius:20px;padding:16px;margin-bottom:12px">'
+        +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>'+esc(b.nom)+'</b>'
+        +'<span style="color:'+col[b.statut]+';font-weight:700">'+lab[b.statut]+'</span></div>'
+        +'<div class="sub" style="margin:6px 0 0">'+esc(b.email_patron)+(b.phone?' · '+esc(b.phone):'')+'</div>'
+        +'<div style="margin-top:8px;font-size:.95rem">Fin : '+jour(fin)+(b.plan?' · Offre : '+esc(b.plan):'')+'</div>'
+        +'<div style="font-size:.95rem">Vendeurs : '+b.nb_vendeurs+' · Payé : '+Number(b.total_paye).toLocaleString("fr-FR")+' FCFA</div>'
+        +'</div>';
+    });
+    box.innerHTML=h;
+  }
+  const charger0=charger;
+  charger=async function(){await charger0();await boutiques();};
+  boutiques();
+})();
 </script></body></html>
