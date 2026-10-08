@@ -68,4 +68,39 @@ document.querySelector(".sub").textContent="Statistiques de TAÏF Marchand, tota
   charger=async function(){await charger0();await boutiques();};
   boutiques();
 })();
+(function(){
+  const box=document.getElementById("bq");
+  async function boutons(){
+    const {data,error}=await sb.rpc("admin_boutiques");
+    if(error||!data)return false;
+    const cards=[...box.children].filter(e=>e.tagName==="DIV");
+    if(cards.length!==data.length)return false;
+    cards.forEach((c,i)=>{
+      if(c.querySelector(".act"))return;
+      const b=data[i];
+      const w=document.createElement("div");
+      w.className="act";
+      w.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px";
+      [1,3,6,12].forEach(m=>{
+        const x=document.createElement("button");
+        x.textContent="+"+m+" mois";
+        x.style.cssText="padding:12px;border:1.5px solid #14513c;border-radius:12px;background:#fff;color:#14513c;font:inherit;font-weight:700";
+        x.onclick=async()=>{
+          if(!confirm("Activer +"+m+" mois pour « "+b.nom+" » ?"))return;
+          const {data:r,error:e}=await sb.rpc("admin_activer",{p_shop:b.id,p_mois:m});
+          if(e)return alert("Erreur : "+e.message);
+          alert("Abonnement actif jusqu'au "+new Date(r).toLocaleDateString("fr-FR"));
+          charger();
+        };
+        w.appendChild(x);
+      });
+      c.appendChild(w);
+    });
+    return true;
+  }
+  const charger1=charger;
+  charger=async function(){await charger1();await boutons();};
+  let n=0;
+  const t=setInterval(async()=>{n++;if(await boutons()||n>12)clearInterval(t);},500);
+})();
 </script></body></html>
