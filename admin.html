@@ -146,4 +146,41 @@ document.querySelector(".sub").textContent="Statistiques de TAÏF Marchand, tota
   let n=0;
   const t=setInterval(async()=>{n++;if(await suspension()||n>12)clearInterval(t);},500);
 })();
+(function(){
+  const out=document.getElementById("out");
+  const box=document.createElement("div");
+  box.id="sg";
+  (document.getElementById("bq")||out).after(box);
+  const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+  const jour=d=>d?new Date(d).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"-";
+  async function signalements(){
+    const {data:s}=await sb.auth.getSession();
+    if(!s.session){box.innerHTML="";return;}
+    const {data,error}=await sb.rpc("admin_signalements");
+    if(error||!data){box.innerHTML="";return;}
+    const nouveaux=data.filter(g=>g.statut==="nouveau").length;
+    box.innerHTML='<h2>Signalements ('+nouveaux+' nouveau'+(nouveaux>1?'x':'')+')</h2>'+(data.length?'':'<p class="sub">Aucun signalement pour le moment.</p>');
+    data.forEach(g=>{
+      const tel=(String(g.appareil||"").match(/\(([^)]*)\)/)||[])[1]||"";
+      const c=document.createElement("div");
+      c.style.cssText="background:#fff;border:1px solid var(--ln);border-radius:20px;padding:16px;margin-bottom:12px"+(g.statut==="traite"?";opacity:.6":"");
+      c.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>'+esc(g.boutique||"Sans boutique")+'</b><span style="color:'+(g.statut==="traite"?"#1f7a4d":"#b8452a")+';font-weight:700">'+(g.statut==="traite"?"Traité":"Nouveau")+'</span></div>'
+        +'<div class="sub" style="margin:6px 0 0">'+esc(g.email)+' · '+jour(g.created_at)+'</div>'
+        +'<p style="margin:10px 0">'+esc(g.message)+'</p>'
+        +'<div class="sub" style="margin:0;font-size:.85rem">Version '+esc(g.version||"?")+(tel?' · '+esc(tel):'')+'</div>';
+      const b=document.createElement("button");
+      b.textContent=g.statut==="traite"?"Rouvrir":"Marquer comme traité";
+      b.style.cssText="width:100%;margin-top:10px;padding:12px;border:1.5px solid #14513c;border-radius:12px;background:#fff;color:#14513c;font:inherit;font-weight:700";
+      b.onclick=async()=>{
+        const {error:e}=await sb.rpc("admin_signalement_traiter",{p_id:g.id,p_statut:g.statut==="traite"?"nouveau":"traite"});
+        if(e)return alert("Erreur : "+e.message);
+        signalements();
+      };
+      c.appendChild(b);box.appendChild(c);
+    });
+  }
+  const charger3=charger;
+  charger=async function(){await charger3();await signalements();};
+  signalements();
+})();
 </script></body></html>
