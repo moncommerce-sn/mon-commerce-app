@@ -33,6 +33,18 @@ nav button.on{color:var(--g)}nav button.on:after{content:"";position:absolute;to
 .st b{display:block;font-size:1.75rem;font-weight:800;line-height:1.15;margin-top:6px}
 .top b{font-size:1.3rem}
 #sl .line{flex-wrap:wrap}#sl .line input{flex:1 1 100%}#sl .line .sm{flex:1;padding:12px 6px}
+nav{gap:3px;padding:8px 6px calc(8px + env(safe-area-inset-bottom));border-top:0;border-radius:20px 20px 0 0;box-shadow:0 -2px 10px rgba(0,0,0,.1)}
+nav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:60px;padding:0 1px;border:1.5px solid var(--c);border-radius:14px;background:var(--l);color:var(--c);font-size:.6rem;font-weight:700;line-height:1.1;position:relative;white-space:nowrap}
+nav button::before{font-size:1.3rem;line-height:1}
+nav button.on{background:var(--c);color:#fff;font-weight:800}
+nav button.on:after{display:none}
+#n-res{--c:#14513c;--l:#e6f0ec}#n-res::before{content:"🏠"}
+#n-vente{--c:#1f9d55;--l:#e3f5ea}#n-vente::before{content:"🛒"}
+#n-stock{--c:#0f9aa0;--l:#e0f4f5}#n-stock::before{content:"📦"}
+#n-dettes{--c:#2563eb;--l:#e4ecfd}#n-dettes::before{content:"👥"}
+#n-dep{--c:#d97706;--l:#fef3dc}#n-dep::before{content:"💸"}
+#n-hist{--c:#7c3aed;--l:#f0e8fd}#n-hist::before{content:"🕘"}
+body{padding-bottom:100px}
 </style></head><body>
 <div id="t"></div>
 <div id="cam" hidden><video id="vid" playsinline muted></video><button class="btn am" onclick="closeCam()">Fermer la caméra</button></div>
