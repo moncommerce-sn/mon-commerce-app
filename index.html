@@ -752,6 +752,41 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
     msg("Merci, ton signalement est envoyé");
   };
 })();
+/* Résumé : chiffres calculés par Supabase */
+(function(){
+  const rrAvant=rr;
+  rr=async function(){
+    await rrAvant();
+    try{
+      if(ROLE!=="owner")return;
+      const {data:d,error}=await sb.rpc("resume_boutique");
+      if(error||!d)return;
+      const n=x=>Math.round(+x||0).toLocaleString("fr-FR");
+      const m=x=>n(x)+" FCFA";
+      const vals=[
+        ["affaires du jour",m(d.ca_jour)],
+        ["affaires du mois",m(d.ca_mois)],
+        ["marge du jour",m(d.marge_jour)],
+        ["marge du mois",m(d.marge_mois)],
+        ["dépenses du mois",m(d.depenses_mois)],
+        ["bénéfice net",m(d.marge_mois-d.depenses_mois)],
+        ["ventes (jour)",String(d.nb_jour)],
+        ["ventes (mois)",String(d.nb_mois)],
+        ["stock disponible",(+d.stock_articles)+" articles"],
+        ["valeur du stock",m(d.valeur_stock)],
+        ["en stock faible",String(d.nb_faible)],
+        ["dettes clients",m(d.dettes_total)]
+      ];
+      document.querySelectorAll("#rsm .st").forEach(function(c){
+        const t=(c.querySelector("span")||{}).textContent;
+        const b=c.querySelector("b");
+        if(!t||!b)return;
+        const k=vals.find(function(v){return t.toLowerCase().includes(v[0]);});
+        if(k)b.textContent=k[1];
+      });
+    }catch(e){}
+  };
+})();
 </script></body></html>
 
 
