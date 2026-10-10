@@ -44,7 +44,11 @@ nav button.on:after{display:none}
 #n-dettes{--c:#2563eb;--l:#e4ecfd}#n-dettes::before{content:"👥"}
 #n-dep{--c:#d97706;--l:#fef3dc}#n-dep::before{content:"💸"}
 #n-hist{--c:#7c3aed;--l:#f0e8fd}#n-hist::before{content:"🕘"}
-body{padding-bottom:100px}
+html,body{overflow-x:hidden;max-width:100%}
+.g2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.st{padding:18px 8px;min-width:0}
+.st b{font-size:1.3rem;overflow-wrap:anywhere}
+ body{padding-bottom:100px}
 </style></head><body>
 <div id="t"></div>
 <div id="cam" hidden><video id="vid" playsinline muted></video><button class="btn am" onclick="closeCam()">Fermer la caméra</button></div>
