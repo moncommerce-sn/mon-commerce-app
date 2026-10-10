@@ -787,6 +787,29 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
     }catch(e){}
   };
 })();
+/* Dettes : ajoute les dettes ouvertes absentes de la liste */
+(function(){
+  const LIM=1000;
+  const loadVAvant=loadV;
+  loadV=async function(){
+    await loadVAvant();
+    try{
+      if(!Array.isArray(V)||V.length<LIM)return;
+      const {data:ids,error}=await sb.rpc("ventes_dettes_ouvertes");
+      if(error||!ids||!ids.length)return;
+      const have=new Set(V.map(function(v){return v.id;}));
+      const manq=ids.filter(function(i){return !have.has(i);});
+      for(let i=0;i<manq.length;i+=100){
+        const r=await sb.from("ventes")
+          .select("*,vente_lignes(*),paiements_dette(montant,created_at),clients(nom)")
+          .in("id",manq.slice(i,i+100));
+        if(r.error||!r.data)break;
+        r.data.forEach(function(v){V.push(v);});
+      }
+      V.sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+    }catch(e){}
+  };
+})();
 </script></body></html>
 
 
