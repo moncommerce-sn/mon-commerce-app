@@ -886,6 +886,43 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
     }catch(e){}
   };
 })();
+/* Cache : évite de retélécharger les ventes à chaque changement d'onglet */
+(function(){
+  const TTL=20000;
+  let ts=0,suspect=false,enCours=null;
+  const file=function(){
+    try{
+      return JSON.parse(localStorage.getItem("taif-attente")||"[]").length
+           +JSON.parse(localStorage.getItem("taif-ops")||"[]").length;
+    }catch(e){return 1;}
+  };
+  window.invalVentes=function(){ts=0;};
+  const loadVAvant4=loadV;
+  loadV=async function(){
+    if(Date.now()-ts<TTL&&!suspect&&file()===0)return;
+    if(enCours)return enCours;
+    enCours=(async function(){
+      try{
+        const q=file(),v0=V;
+        await loadVAvant4();
+        if(V!==v0){ts=Date.now();suspect=q>0;}
+      }finally{enCours=null;}
+    })();
+    return enCours;
+  };
+  const rpcAvant=sb.rpc;
+  sb.rpc=function(nom){
+    if(nom==="enregistrer_vente"||nom==="annuler_vente")window.invalVentes();
+    return rpcAvant.apply(sb,arguments);
+  };
+  ["encaisser","addD","delD"].forEach(function(n){
+    const f=window[n];
+    if(typeof f!=="function")return;
+    window[n]=function(){window.invalVentes();return f.apply(this,arguments);};
+  });
+  window.addEventListener("online",window.invalVentes);
+  sb.auth.onAuthStateChange(function(){window.invalVentes();});
+})();
 </script></body></html>
 
 
