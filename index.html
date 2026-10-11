@@ -853,6 +853,7 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
           extra=extra.concat(r.data);
           if(r.data.length){cursor=r.data[r.data.length-1].created_at;}
           if(r.data.length<PAGE)fini=true;
+         r.data.forEach(function(v){if(!V.some(function(x){return x.id===v.id;}))V.push(v);});V.sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
           await rh();
         }catch(e){b.disabled=false;b.textContent="Voir plus de ventes";msg("Impossible de charger plus de ventes");}
       };
