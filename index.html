@@ -810,6 +810,56 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
     }catch(e){}
   };
 })();
+/* Historique : bouton Voir plus */
+(function(){
+  const BASE=1000, PAGE=50;
+  let extra=[], cursor=null, fini=false;
+  sb.auth.onAuthStateChange(function(ev){
+    if(ev==="SIGNED_OUT"){extra=[];cursor=null;fini=false;}
+  });
+  const loadVAvant2=loadV;
+  loadV=async function(){
+    await loadVAvant2();
+    try{
+      if(!Array.isArray(V)||!extra.length)return;
+      const have=new Set(V.map(function(v){return v.id;}));
+      extra.forEach(function(v){if(!have.has(v.id))V.push(v);});
+      V.sort(function(a,b){return new Date(b.created_at)-new Date(a.created_at);});
+    }catch(e){}
+  };
+  const rhAvant=rh;
+  rh=async function(){
+    await rhAvant();
+    try{
+      const old=document.getElementById("hl-plus");
+      if(old)old.remove();
+      const l=document.getElementById("hl");
+      if(!l||!Array.isArray(V))return;
+      if(cursor===null){
+        if(V.length<BASE)return;
+        cursor=V[BASE-1].created_at;
+      }
+      if(fini)return;
+      const b=document.createElement("button");
+      b.id="hl-plus";b.className="btn ol";b.style.marginTop="12px";
+      b.textContent="Voir plus de ventes";
+      b.onclick=async function(){
+        b.disabled=true;b.textContent="Chargement…";
+        try{
+          const r=await sb.from("ventes")
+            .select("*,vente_lignes(*),paiements_dette(montant,created_at),clients(nom)")
+            .lt("created_at",cursor).order("created_at",{ascending:false}).limit(PAGE);
+          if(r.error)throw r.error;
+          extra=extra.concat(r.data);
+          if(r.data.length){cursor=r.data[r.data.length-1].created_at;}
+          if(r.data.length<PAGE)fini=true;
+          await rh();
+        }catch(e){b.disabled=false;b.textContent="Voir plus de ventes";msg("Impossible de charger plus de ventes");}
+      };
+      l.after(b);
+    }catch(e){}
+  };
+})();
 </script></body></html>
 
 
