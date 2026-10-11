@@ -860,6 +860,32 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
     }catch(e){}
   };
 })();
+/* Résumé vendeur : chiffres calculés par Supabase */
+(function(){
+  const rrAvant3=rr;
+  rr=async function(){
+    await rrAvant3();
+    try{
+      if(ROLE!=="seller")return;
+      const {data:d,error}=await sb.rpc("resume_vendeur");
+      if(error||!d)return;
+      const n=function(x){return Math.round(+x||0).toLocaleString("fr-FR");};
+      document.querySelectorAll("#rsm .st").forEach(function(c){
+        const t=((c.querySelector("span")||{}).textContent||"").toLowerCase();
+        const b=c.querySelector("b");
+        if(!t||!b)return;
+        if(t.includes("nombre")){
+          if(t.includes("jour"))b.textContent=String(d.nb_jour);
+          else if(t.includes("mois"))b.textContent=String(d.nb_mois);
+        }else if(t.includes("du jour")){
+          b.textContent=n(d.ca_jour)+" FCFA";
+        }else if(t.includes("du mois")){
+          b.textContent=n(d.ca_mois)+" FCFA";
+        }
+      });
+    }catch(e){}
+  };
+})();
 </script></body></html>
 
 
