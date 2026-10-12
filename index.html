@@ -1008,6 +1008,33 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
     }
   }
 })();
+/* Connexion fiable : une demande à la fois, nouvel essai nettoyé */
+(function(){
+  const si=sb.auth.signInWithPassword.bind(sb.auth);
+  sb.auth.signInWithPassword=async function(c){
+    const r=await si(c);
+    try{
+      if(r&&r.error&&/invalid login credentials/i.test(r.error.message||"")){
+        const e2=String(c.email||"").trim().toLowerCase();
+        const p2=String(c.password||"").trim();
+        if(e2!==c.email||p2!==c.password){
+          const r2=await si({email:e2,password:p2});
+          if(r2&&!r2.error)return r2;
+        }
+      }
+    }catch(e){}
+    return r;
+  };
+  const auth1=auth;
+  let occupe=false;
+auth=async function(up){
+  if(occupe){msg("Connexion en cours…");return;}
+  occupe=true;
+  const t=setTimeout(function(){occupe=false;},15000);
+  try{return await auth1(up);}
+  finally{clearTimeout(t);occupe=false;}
+};
+})();
 </script></body></html>
 
 
