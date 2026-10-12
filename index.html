@@ -926,7 +926,7 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
 })();
 /* Produits et clients : charge tout par pages de 1000 */
 (function(){
-  const PAS=2;
+  const PAS=1000;
   const loadAvant5=load;
   async function toutes(table){
     const out=[];
