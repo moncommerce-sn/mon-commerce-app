@@ -961,6 +961,53 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
     }catch(e){}
   };
 })();
+/* Connexion : messages clairs, mot de passe visible, saisie propre */
+(function(){
+  const TR=[
+    ["invalid login credentials","Email ou mot de passe incorrect. Vérifie, ou appuie sur « Mot de passe oublié ? »."],
+    ["email not confirmed","Ton email n'est pas encore confirmé. Ouvre le lien reçu par email (regarde aussi les spams)."],
+    ["user already registered","Cet email a déjà un compte. Connecte-toi, ou appuie sur « Mot de passe oublié ? »."],
+    ["at least 6 characters","Le mot de passe doit avoir au moins 6 caractères."],
+    ["rate limit","Trop de demandes. Réessaie dans quelques minutes."],
+    ["only request this after","Attends quelques secondes avant de réessayer."]
+  ];
+  const msg0=msg;
+  msg=function(t){
+    try{
+      const s=String(t||"").toLowerCase();
+      const k=TR.find(function(x){return s.includes(x[0]);});
+      if(k)t=k[1];
+    }catch(e){}
+    return msg0(t);
+  };
+  const su=sb.auth.signUp.bind(sb.auth);
+  sb.auth.signUp=async function(a){
+    const r=await su(a);
+    try{
+      const u=r&&r.data&&r.data.user;
+      if(u&&Array.isArray(u.identities)&&u.identities.length===0)
+        return {data:{user:null,session:null},error:{message:"User already registered"}};
+    }catch(e){}
+    return r;
+  };
+  const em=document.getElementById("em"),pw=document.getElementById("pw");
+  if(em&&pw){
+    em.setAttribute("autocapitalize","none");
+    em.setAttribute("autocorrect","off");
+    em.setAttribute("spellcheck","false");
+    em.setAttribute("autocomplete","username");
+    pw.setAttribute("autocapitalize","none");
+    pw.setAttribute("autocorrect","off");
+    pw.setAttribute("autocomplete","current-password");
+    if(!document.getElementById("pw-voir")){
+      const l=document.createElement("label");
+      l.style.cssText="display:flex;align-items:center;gap:8px;margin:8px 0 0";
+      l.innerHTML='<input type="checkbox" id="pw-voir" style="width:auto;margin:0;padding:0"> Afficher le mot de passe';
+      pw.after(l);
+      document.getElementById("pw-voir").onchange=function(){pw.type=this.checked?"text":"password";};
+    }
+  }
+})();
 </script></body></html>
 
 
