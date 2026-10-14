@@ -53,6 +53,43 @@ nav button{height:54px}
  .st{padding:14px 8px}
  body{padding-bottom:100px}
 #n-dettes.on::before{filter:brightness(0) invert(1)}
+/* ===== Design TAÏF (maquette) ===== */
+body{background:#f2f6f2}
+#tf-head{background:linear-gradient(160deg,#14513c,#0e3d2d);padding:max(18px,env(safe-area-inset-top)) 20px 74px;border-radius:0 0 30px 30px}
+.tf-logo{display:flex;align-items:center;gap:10px;max-width:600px;margin:auto}
+.tf-logo b{display:block;color:#fff;font-size:1.7rem;font-weight:800;line-height:1}
+.tf-logo span{display:block;color:#ffc31f;font-size:1.15rem;font-weight:800;line-height:1.1}
+#ap .w>h1,#ap .w>.sub{display:none}
+#ap .w{margin-top:-58px;position:relative}
+.tf-card{background:#fff;border-radius:24px;padding:16px;margin-bottom:16px;box-shadow:0 6px 22px rgba(20,81,60,.12)}
+.tf-top{display:flex;align-items:center;gap:12px}
+.tf-top div{flex:1}
+.tf-top b{display:block;font-size:1.25rem}
+.tf-top small{color:var(--mut)}
+.tf-ico{width:44px;height:44px;border-radius:14px;background:#e6f2e9;color:#14513c;display:grid;place-items:center}
+.tf-chev{border:0;background:none;color:var(--mut);padding:6px;transition:transform .2s}
+.tf-card.closed .tf-chev{transform:rotate(-90deg)}
+.tf-card.closed .tf-g{display:none}
+.tf-g{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.tf-st{background:#fff;border:1px solid var(--ln);border-radius:18px;padding:14px;box-shadow:0 3px 10px rgba(0,0,0,.05)}
+.tf-st span{display:block;color:var(--mut);font-size:.9rem}
+.tf-st b{display:block;font-size:1.6rem;font-weight:800;margin-top:4px;overflow-wrap:anywhere}
+.tf-st i{font-style:normal;color:var(--mut);font-size:.85rem}
+.tf-h{margin:6px 4px 12px;font-size:1.1rem}
+.tf-qa{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;margin-bottom:16px}
+.tf-t{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:8px;font:inherit;padding:0}
+.tf-t span{width:68px;height:68px;border-radius:22px;display:grid;place-items:center;box-shadow:0 6px 14px rgba(0,0,0,.14)}
+.tf-t em{font-style:normal;font-weight:700;font-size:.95rem;color:var(--ink)}
+.t1 span{background:linear-gradient(145deg,#5aa72a,#2f7d1f);color:#ffd23f}
+.t2 span,.t4 span{background:linear-gradient(145deg,#14513c,#0e3d2d);color:#ffd23f}
+.t3 span,.t5 span{background:linear-gradient(145deg,#ffcf3f,#f2a900);color:#14513c}
+.t6 span{background:#e8ebe8;color:#4a5750;box-shadow:none}
+/* barre du bas : icônes en traits, onglet actif en vert */
+nav button::before{display:none!important}
+nav button{background:none!important;color:#6b7a71!important;font-weight:600}
+nav button.on{color:#14513c!important;font-weight:800}
+nav button svg{display:block;width:24px;height:24px}
+#n-res.on svg{fill:currentColor}
 </style></head><body>
 <div id="t"></div>
 <div id="cam" hidden><video id="vid" playsinline muted></video><button class="btn am" onclick="closeCam()">Fermer la caméra</button></div>
@@ -1035,6 +1072,83 @@ auth=async function(up){
   finally{clearTimeout(t);occupe=false;}
 };
 })();
+/* ===== Design TAÏF (maquette) ===== */
+const TF_ICONS={
+ res:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+ vente:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 7H6"/>',
+ stock:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7.5L12 12l8.7-4.5M12 12v9"/>',
+ dettes:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14c3 0 4.5 2 4.5 4.5"/>',
+ dep:'<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/>',
+ hist:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+ plus:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+ doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
+ chev:'<path d="M6 9l6 6 6-6"/>'
+};
+function tfSvg(k,s){return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${TF_ICONS[k]}</svg>`}
+
+/* En-tête vert + logo */
+(function(){
+  const ap=document.getElementById("ap");
+  if(!ap||document.getElementById("tf-head"))return;
+  const h=document.createElement("div");h.id="tf-head";
+  h.innerHTML=`<div class="tf-logo"><svg viewBox="0 0 48 40" width="46" height="38" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h6l5 21h22l5-15H11" stroke="#fff" stroke-width="3"/><circle cx="17" cy="34" r="2.6" fill="#fff"/><circle cx="32" cy="34" r="2.6" fill="#fff"/><path d="M16 20l7-6 5 4 9-9" stroke="#ffc31f" stroke-width="3"/><path d="M31 9h6v6" stroke="#ffc31f" stroke-width="3"/></svg><div><b>TAÏF</b><span>Marchand</span></div></div>`;
+  ap.prepend(h);
+})();
+
+/* Icônes de la barre du bas (remises si le texte de l'onglet est réécrit) */
+function tfNav(){
+  [["n-res","res"],["n-vente","vente"],["n-stock","stock"],["n-dettes","dettes"],["n-dep","dep"],["n-hist","hist"]].forEach(([id,k])=>{
+    const b=document.getElementById(id);
+    if(b&&!b.querySelector("svg"))b.insertAdjacentHTML("afterbegin",tfSvg(k,24));
+  });
+}
+tfNav();
+
+function tfPlus(){const p=document.getElementById("tf-plus");if(p)p.hidden=!p.hidden}
+
+/* Écran Résumé (patron) : lit les 4 chiffres déjà calculés, puis redessine */
+const tfRR=rr;
+rr=async function(){
+  await tfRR();
+  tfNav();
+  if(ROLE==="seller")return;
+  const g=re=>{
+    for(const s of document.querySelectorAll("#rsm .st")){
+      const l=s.querySelector("span"),b=s.querySelector("b");
+      if(l&&b&&re.test(l.textContent))return b.textContent.trim();
+    }
+    return null;
+  };
+  const ca=g(/affaires.*jour/i),mg=g(/marge.*jour/i),nv=g(/ventes.*jour/i),sk=g(/stock.*dispo/i);
+  if([ca,mg,nv,sk].some(x=>x===null))return; /* si un chiffre manque, on garde l'ancien Résumé */
+  const st=(l,v)=>{
+    const m=String(v).match(/^(.*?)\s*(FCFA|articles?)?$/);
+    return `<div class="tf-st"><span>${l}</span><b>${m[1]}</b>${m[2]==="FCFA"?"<i>FCFA</i>":""}</div>`;
+  };
+  const t=(c,k,l,go)=>`<button class="tf-t ${c}" onclick="${go}"><span>${tfSvg(k,30)}</span><em>${l}</em></button>`;
+  document.getElementById("rsm").innerHTML=`
+    <div class="tf-card">
+      <div class="tf-top">
+        <span class="tf-ico">${tfSvg("doc",22)}</span>
+        <div><b>Résumé</b><small>Aujourd'hui</small></div>
+        <button class="tf-chev" onclick="this.closest('.tf-card').classList.toggle('closed')">${tfSvg("chev",20)}</button>
+      </div>
+      <div class="tf-g">${st("CA jour",ca)}${st("Marge",mg)}${st("Ventes jour",nv)}${st("Stock dispo",sk)}</div>
+    </div>
+    <h3 class="tf-h">Accès rapide</h3>
+    <div class="tf-qa">
+      ${t("t1","vente","Vente","show('vente')")}
+      ${t("t2","stock","Stock","show('stock')")}
+      ${t("t3","dettes","Dettes","show('dettes')")}
+      ${t("t4","dep","Dépenses","show('dep')")}
+      ${t("t5","hist","Historique","show('hist')")}
+      ${t("t6","plus","Plus","tfPlus()")}
+    </div>
+    <div id="tf-plus" class="tf-card" hidden>
+      ${ROLE==="owner"?`<button class="btn ol" onclick="show('eq')">👥 Mon équipe</button>`:""}
+      <button class="btn ol" style="margin-top:8px" onclick="sb.auth.signOut().then(start)">Se déconnecter</button>
+    </div>`;
+};
 </script></body></html>
 
 
