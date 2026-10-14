@@ -89,7 +89,9 @@ nav button::before{display:none!important}
 nav button{background:none!important;color:#6b7a71!important;font-weight:600}
 nav button.on{color:#14513c!important;font-weight:800}
 nav button svg{display:block;width:24px;height:24px}
-#n-res.on svg{fill:currentColor}
+nav button{border:0!important;border-radius:0!important}
+.tf-t{-webkit-tap-highlight-color:transparent;outline:0}
+ #n-res.on svg{fill:currentColor}
 </style></head><body>
 <div id="t"></div>
 <div id="cam" hidden><video id="vid" playsinline muted></video><button class="btn am" onclick="closeCam()">Fermer la caméra</button></div>
@@ -1121,7 +1123,8 @@ rr=async function(){
   };
   const ca=g(/affaires.*jour/i),mg=g(/marge.*jour/i),nv=g(/ventes.*jour/i),sk=g(/stock.*dispo/i);
   if([ca,mg,nv,sk].some(x=>x===null))return; /* si un chiffre manque, on garde l'ancien Résumé */
-  const st=(l,v)=>{
+const cm=g(/affaires.*mois/i),mm=g(/marge.*mois/i),dm=g(/d[ée]penses.*mois/i),bm=g(/b[ée]n[ée]fice.*mois/i),vm=g(/ventes.*mois/i); 
+ const st=(l,v)=>{
     const m=String(v).match(/^(.*?)\s*(FCFA|articles?)?$/);
     return `<div class="tf-st"><span>${l}</span><b>${m[1]}</b>${m[2]==="FCFA"?"<i>FCFA</i>":""}</div>`;
   };
@@ -1135,9 +1138,19 @@ rr=async function(){
       </div>
       <div class="tf-g">${st("CA jour",ca)}${st("Marge",mg)}${st("Ventes jour",nv)}${st("Stock dispo",sk)}</div>
     </div>
+     <div class="tf-card">
+      <div class="tf-top">
+        <span class="tf-ico">${tfSvg("hist",22)}</span>
+        <div><b>Ce mois</b><small>Depuis le 1er</small></div>
+        <button class="tf-chev" onclick="this.closest('.tf-card').classList.toggle('closed')">${tfSvg("chev",20)}</button>
+      </div>
+      <div class="tf-g">${st("CA du mois",cm||"0")}${st("Marge du mois",mm||"0")}${st("Dépenses",dm||"0")}${st("Bénéfice net",bm||"0")}${st("Ventes du mois",vm||"0")}</div>
+    </div> 
     <h3 class="tf-h">Accès rapide</h3>
     <div class="tf-qa">
-      ${t("t1","vente","Vente","show('vente')")}
+
+      ${
+       t("t1","vente","Vente","show('vente')")}
       ${t("t2","stock","Stock","show('stock')")}
       ${t("t3","dettes","Dettes","show('dettes')")}
       ${t("t4","dep","Dépenses","show('dep')")}
