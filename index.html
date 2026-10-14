@@ -1124,6 +1124,8 @@ rr=async function(){
   const ca=g(/affaires.*jour/i),mg=g(/marge.*jour/i),nv=g(/ventes.*jour/i),sk=g(/stock.*dispo/i);
   if([ca,mg,nv,sk].some(x=>x===null))return; /* si un chiffre manque, on garde l'ancien Résumé */
 const cm=g(/affaires.*mois/i),mm=g(/marge.*mois/i),dm=g(/d[ée]penses.*mois/i),bm=g(/b[ée]n[ée]fice.*mois/i),vm=g(/ventes.*mois/i); 
+ let td=g(/dettes/i);
+if(td===null){try{td=F(S(V.filter(v=>v.client_id),rest))}catch(e){td="0 FCFA"}}
  const st=(l,v)=>{
     const m=String(v).match(/^(.*?)\s*(FCFA|articles?)?$/);
     return `<div class="tf-st"><span>${l}</span><b>${m[1]}</b>${m[2]==="FCFA"?"<i>FCFA</i>":""}</div>`;
@@ -1144,6 +1146,9 @@ const cm=g(/affaires.*mois/i),mm=g(/marge.*mois/i),dm=g(/d[ée]penses.*mois/i),b
         <div><b>Ce mois</b><small>Depuis le 1er</small></div>
         <button class="tf-chev" onclick="this.closest('.tf-card').classList.toggle('closed')">${tfSvg("chev",20)}</button>
       </div>
+   
+
+      ${st("Dettes clients",td)}
       <div class="tf-g">${st("CA du mois",cm||"0")}${st("Marge du mois",mm||"0")}${st("Dépenses",dm||"0")}${st("Bénéfice net",bm||"0")}${st("Ventes du mois",vm||"0")}</div>
     </div> 
     <h3 class="tf-h">Accès rapide</h3>
