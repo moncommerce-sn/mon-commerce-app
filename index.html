@@ -1166,6 +1166,7 @@ if(td===null){try{td=F(S(V.filter(v=>v.client_id),rest))}catch(e){td="0 FCFA"}}
       ${ROLE==="owner"?`<button class="btn ol" onclick="show('eq')">👥 Mon équipe</button>`:""}
       <button class="btn ol" style="margin-top:8px" onclick="sb.auth.signOut().then(start)">Se déconnecter</button>
     </div>`;
+document.querySelectorAll("#rsm .tf-g")[1]?.insertAdjacentHTML("beforeend",st("Dettes clients",td));
 };
 </script></body></html>
 
