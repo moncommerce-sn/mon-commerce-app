@@ -1168,6 +1168,71 @@ if(td===null){try{td=F(S(V.filter(v=>v.client_id),rest))}catch(e){td="0 FCFA"}}
     </div>`;
 document.querySelectorAll("#rsm .tf-g")[1]?.insertAdjacentHTML("beforeend",st("Dettes clients",td));
 };
+/* ===== Fin d'essai : lecture seule + rappels ===== */
+const TF_WAVE="76 191 16 09";
+const TF_OM="77 824 81 26";
+const TF_OFFRES=[["1 mois","2 000 FCFA"],["3 mois","5 000 FCFA"],["6 mois","9 000 FCFA"],["1 an","15 000 FCFA"]];
+let TF_LOCK=false,TF_EMAIL="";
+
+function tfOffres(){
+  let p=$("paywall");
+  if(!p){
+    p=document.createElement("div");p.id="paywall";p.hidden=true;
+    p.style.cssText="position:fixed;inset:0;background:var(--bg);z-index:7;overflow:auto;padding:20px 16px 100px";
+    document.body.appendChild(p);
+  }
+  const om=TF_OM?` ou par Orange Money au <b>${TF_OM}</b>`:"";
+  p.innerHTML=`<div class="w"><h1>Choisis une offre</h1><p class="sub">Tes données sont conservées.</p>
+    <div class="card">${TF_OFFRES.map(o=>`<div class="it top"><span>${o[0]}</span><b>${o[1]}</b></div>`).join("")}</div>
+    <div class="card"><b>Comment payer</b><p class="mut">Envoie le montant par Wave au <b>${TF_WAVE}</b>${om}, puis envoie la preuve de paiement avec ton email de compte (${esc(TF_EMAIL)}). Ton abonnement sera activé rapidement.</p></div>
+    <button class="btn" onclick="verifAbo()">J'ai payé : actualiser</button>
+    <button class="btn ol" style="margin-top:8px" onclick="$('paywall').hidden=true">Fermer</button>
+    <button class="btn ol" style="margin-top:8px" onclick="sb.auth.signOut().then(start)">Se déconnecter</button></div>`;
+  p.hidden=false;
+}
+
+verifAbo=async function(){
+  const {data:{session}}=await sb.auth.getSession();
+  let b=$("abo");
+  if(!b){b=document.createElement("div");b.id="abo";document.querySelector("#ap .w").prepend(b)}
+  if(!session){b.innerHTML="";TF_LOCK=false;return}
+  TF_EMAIL=session.user.email||"";
+  const {data,error}=await sb.from("abonnements").select("essai_fin,abonnement_fin,plan").eq("user_id",session.user.id).maybeSingle();
+  if(error||!data){b.innerHTML="";return}
+  const now=Date.now(),e=new Date(data.essai_fin).getTime(),a=data.abonnement_fin?new Date(data.abonnement_fin).getTime():0;
+  const jours=Math.ceil((Math.max(e,a)-now)/864e5),seller=ROLE==="seller",paid=a>now;
+  const p=$("paywall"),wasOpen=!!(p&&!p.hidden);
+  TF_LOCK=jours<=0;
+  const card=(t,x,s)=>`<div class="card" style="padding:14px 18px;${s||""}">${t}${x||""}</div>`;
+  const btn=t=>`<button class="btn am sm" style="margin-top:10px" onclick="tfOffres()">${t}</button>`;
+  if(!TF_LOCK){
+    if(p)p.hidden=true;
+    if(wasOpen)msg("Abonnement actif ✅");
+    if(seller){b.innerHTML="";return}
+    const d=jours+" jour"+(jours>1?"s":"");
+    if(jours>3)b.innerHTML=paid?card(`✅ Abonnement actif jusqu'au <b>${new Date(a).toLocaleDateString("fr-FR")}</b>`):card(`🎁 Essai gratuit : <b>${d}</b> restant${jours>1?"s":""}`);
+    else b.innerHTML=card(`⏳ ${paid?"Ton abonnement se termine":"Ton essai se termine"} dans <b>${d}</b>. Abonne-toi pour ne pas être bloqué.`,btn("Voir les offres"),"border-color:var(--a)");
+    return;
+  }
+  if(wasOpen)msg("Pas encore activé. Réessaie dans quelques minutes.");
+  b.innerHTML=seller
+    ?card(`🔒 L'abonnement de la boutique est terminé. Demande à ton patron de le renouveler. Tu peux consulter les données, mais pas vendre.`,"","border-color:var(--r)")
+    :card(`🔒 ${a?"Abonnement terminé":"Essai terminé"} : tu peux consulter tes données, mais plus vendre ni modifier.`,btn("Choisir une offre"),"border-color:var(--r)");
+};
+
+/* Actions bloquées quand l'essai est terminé (lecture seule) */
+["sell","saveP","addQ","delP","addD","delD","encaisser","annulerV"].forEach(n=>{
+  const f=window[n];
+  if(typeof f!=="function")return;
+  window[n]=function(...a){
+    if(TF_LOCK){
+      msg("Abonnement terminé : tu peux consulter, mais pas modifier.");
+      if(ROLE!=="seller")tfOffres();
+      return;
+    }
+    return f.apply(this,a);
+  };
+});
 </script></body></html>
 
 
