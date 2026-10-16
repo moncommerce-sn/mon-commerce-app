@@ -1435,6 +1435,7 @@ verifAbo=async function(){
     ?card(`🔒 L'abonnement de la boutique est terminé. Demande à ton patron de le renouveler. Tu peux consulter les données, mais pas vendre.`,"","border-color:var(--r)")
     :card(`🔒 ${a?"Abonnement terminé":"Essai terminé"} : tu peux consulter tes données, mais plus vendre ni modifier.`,"<br>"+btn("Choisir un forfait"),"border-color:var(--r)");
 };
+if(false){ 
 /* ===== Paiements : déclaration + administration ===== */
 const tfNomPlan=id=>{const x=TF_PLANS.find(p=>p.id===id);return x?x.nom+" · "+tfDur(x.mois):id};
 const tfDt=d=>new Date(d).toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"});
@@ -1538,6 +1539,7 @@ rr=async function(){
     if(n>0&&$("rsm")&&!$("tf-adm-alert"))$("rsm").insertAdjacentHTML("afterbegin",`<div id="tf-adm-alert" class="card" style="padding:14px 18px;border-color:var(--a);cursor:pointer" onclick="tfAdmin('attente')">💳 <b>${n}</b> paiement(s) à confirmer</div>`);
   }catch(e){}
 };
+}
 </script></body></html>
 
 
