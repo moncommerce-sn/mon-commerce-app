@@ -1540,6 +1540,35 @@ rr=async function(){
   }catch(e){}
 };
 }
+/* ===== Tableau de bord du fondateur ===== */
+async function tfTdb(){
+  const p=tfBox();
+  p.innerHTML=`<div class="tf-ab"><div class="tf-abh"><button onclick="$('paywall').hidden=true">←</button><b>Tableau de bord</b></div><div class="card" style="margin:16px">Chargement…</div></div>`;
+  p.hidden=false;
+  const {data:r,error}=await sb.rpc("tableau_de_bord");
+  if(error||!r){p.querySelector(".card").textContent="Accès refusé ou erreur.";return}
+  const st=(l,v)=>`<div class="tf-st"><span>${l}</span><b>${v}</b></div>`;
+  const par=(r.par_plan||[]).map(x=>`<div class="it top"><span>${esc(x.plan)} · ${x.nb}</span><b>${F(x.total)}</b></div>`).join("")||`<div class="mut">Aucun paiement ce mois-ci.</div>`;
+  const der=(r.derniers||[]).map(x=>`<div class="it top"><span>${esc(x.boutique||"Boutique")}<br><small class="mut">${esc(x.plan)} · ${new Date(x.paye_at).toLocaleDateString("fr-FR")}</small></span><b>${F(x.montant)}</b></div>`).join("")||`<div class="mut">Aucun paiement enregistré pour l'instant.</div>`;
+  p.innerHTML=`<div class="tf-ab">
+    <div class="tf-abh"><button onclick="$('paywall').hidden=true">←</button><b>Tableau de bord</b></div>
+    <div class="card" style="margin:16px"><div class="mut">Encaissé ce mois-ci</div><div class="big ok">${F(r.encaisse_mois)}</div><div class="mut">${r.nb_paiements_mois} paiement(s) · total depuis le début : ${F(r.encaisse_total)}</div></div>
+    <div class="tf-g" style="margin:0 16px 16px">${st("✅ Abonnés actifs",r.abonnes)}${st("🎁 En essai",r.essai)}${st("🔒 Expirés",r.expires)}${st("🆕 Nouveaux ce mois",r.nouveaux_mois)}</div>
+    <div class="card" style="margin:0 16px 16px"><b>Ce mois-ci par forfait</b>${par}</div>
+    <div class="card" style="margin:0 16px 30px"><b>Derniers paiements</b>${der}</div>
+  </div>`;
+}
+
+const tfRRb=rr;
+rr=async function(){
+  await tfRRb();
+  if(ROLE==="seller")return;
+  try{
+    const {data:ok}=await sb.rpc("est_admin");
+    const pl=$("tf-plus");
+    if(ok&&pl&&!$("tf-tdb-btn"))pl.insertAdjacentHTML("afterbegin",`<button id="tf-tdb-btn" class="btn" style="margin-bottom:8px" onclick="tfTdb()">📊 Tableau de bord</button>`);
+  }catch(e){}
+};
 </script></body></html>
 
 
