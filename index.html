@@ -1435,6 +1435,109 @@ verifAbo=async function(){
     ?card(`🔒 L'abonnement de la boutique est terminé. Demande à ton patron de le renouveler. Tu peux consulter les données, mais pas vendre.`,"","border-color:var(--r)")
     :card(`🔒 ${a?"Abonnement terminé":"Essai terminé"} : tu peux consulter tes données, mais plus vendre ni modifier.`,"<br>"+btn("Choisir un forfait"),"border-color:var(--r)");
 };
+/* ===== Paiements : déclaration + administration ===== */
+const tfNomPlan=id=>{const x=TF_PLANS.find(p=>p.id===id);return x?x.nom+" · "+tfDur(x.mois):id};
+const tfDt=d=>new Date(d).toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"});
+let TF_ADM="attente";
+
+/* Écran « J'ai payé » */
+function tfDeclarer(){
+  const p=tfBox(),pl=TF_PLANS.find(x=>x.id===TF_SEL)||TF_PLANS[0];
+  p.innerHTML=`<div class="tf-ab">
+    <div class="tf-abh"><button onclick="tfRender(true)">←</button><b>Confirmer mon paiement</b></div>
+    <div class="tf-stat"><span>🧾</span><div><b>${pl.nom} · ${tfDur(pl.mois)}</b><small>${tfF(pl.prix)}</small></div></div>
+    <div class="card" style="margin:0 16px 14px">
+      <label>Moyen de paiement</label>
+      <select id="tf-moy"><option>Wave</option><option>Orange Money</option><option>Autre</option></select>
+      <label>Numéro de transaction ou nom de l'expéditeur (facultatif)</label>
+      <input id="tf-ref" placeholder="Ex : T123456 ou ton nom">
+    </div>
+    <div class="tf-abb"><button class="btn" onclick="tfEnvoyerDecl()">Envoyer</button></div>
+  </div>`;
+  p.hidden=false;
+}
+
+async function tfEnvoyerDecl(){
+  const pl=TF_PLANS.find(x=>x.id===TF_SEL)||TF_PLANS[0];
+  const {error}=await sb.rpc("declarer_paiement",{p_plan:pl.id,p_moyen:$("tf-moy").value,p_ref:$("tf-ref").value.trim()||null});
+  if(error){
+    msg(String(error.message).includes("trop")?"Tu as déjà plusieurs paiements en attente.":"Impossible d'envoyer. Réessaie dans un instant.");
+    return;
+  }
+  msg("Paiement signalé ✅ Ton abonnement sera activé dès confirmation.");
+  tfRender(true);
+}
+
+/* Dans l'écran de paiement : « J'ai payé » ouvre la déclaration */
+const tfRender1=tfRender;
+tfRender=function(pay){
+  tfRender1(pay);
+  if(pay){
+    const bs=document.querySelectorAll("#paywall .tf-abb button");
+    if(bs[0]){bs[0].textContent="J'ai payé";bs[0].setAttribute("onclick","tfDeclarer()")}
+    if(bs[1])bs[1].insertAdjacentHTML("beforebegin",`<button class="btn ol" style="margin-top:8px" onclick="verifAbo()">Actualiser mon abonnement</button>`);
+  }
+};
+
+/* Administration */
+async function tfAdmin(tab){
+  if(tab)TF_ADM=tab;
+  const p=tfBox();
+  p.innerHTML=`<div class="tf-ab"><div class="tf-abh"><button onclick="$('paywall').hidden=true">←</button><b>Administration</b></div><div class="card" style="margin:16px">Chargement…</div></div>`;
+  p.hidden=false;
+  const {data:r,error:e1}=await sb.rpc("admin_resume");
+  if(e1||!r){p.querySelector(".card").textContent="Accès refusé.";return}
+  let liste="";
+  if(TF_ADM==="comptes"){
+    const {data}=await sb.rpc("admin_comptes");
+    const lab={abonne:"✅ Abonné",essai:"🎁 Essai",expire:"🔒 Expiré",sans_choix:"👋 Sans choix"};
+    liste=(data||[]).map(c=>`<div class="card" style="margin:0 16px 10px;padding:12px 16px"><b>${esc(c.email)}</b><div class="mut">${lab[c.etat]||esc(c.etat)}${c.fin?" · jusqu'au "+new Date(c.fin).toLocaleDateString("fr-FR"):""}${c.plan?" · "+esc(tfNomPlan(c.plan)):""}</div></div>`).join("")||`<div class="card" style="margin:0 16px">Aucun compte.</div>`;
+  }else{
+    const {data}=await sb.rpc("admin_paiements",{p_statut:TF_ADM==="attente"?"en_attente":"confirme"});
+    liste=(data||[]).map(x=>`<div class="card" style="margin:0 16px 10px;padding:12px 16px"><b>${esc(x.email)}</b>
+      <div class="mut">${esc(tfNomPlan(x.plan))} · <b>${tfF(x.montant)}</b></div>
+      <div class="mut">${esc(x.moyen||"")}${x.reference?" · "+esc(x.reference):""} · ${tfDt(x.created_at)}</div>
+      ${x.statut==="en_attente"?`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" onclick="tfAdmOk('${x.id}')">Confirmer</button><button class="btn ol" onclick="tfAdmNo('${x.id}')">Refuser</button></div>`:""}</div>`).join("")||`<div class="card" style="margin:0 16px">Aucun paiement.</div>`;
+  }
+  const st=(l,v)=>`<div class="tf-st"><span>${l}</span><b>${v}</b></div>`;
+  const tab2=(id,l)=>`<button class="btn ${TF_ADM===id?"":"ol"} sm" style="margin:0 4px 8px 0" onclick="tfAdmin('${id}')">${l}</button>`;
+  p.innerHTML=`<div class="tf-ab">
+    <div class="tf-abh"><button onclick="$('paywall').hidden=true">←</button><b>Administration</b></div>
+    <div class="tf-g" style="margin:16px">${st("🎁 En essai",r.essai)}${st("✅ Abonnés",r.abonnes)}${st("👋 Sans choix",r.sans_choix)}${st("🔒 Expirés",r.expires)}${st("⏳ À confirmer",r.attente)}${st("💰 Encaissé ce mois",tfF(r.encaisse_mois))}</div>
+    <div style="margin:0 16px 10px">${tab2("attente","À confirmer")}${tab2("confirme","Confirmés")}${tab2("comptes","Comptes")}</div>
+    ${liste}<div style="height:30px"></div></div>`;
+}
+
+async function tfAdmOk(id){
+  if(!confirm("Tu as bien reçu l'argent ? Confirmer et activer l'abonnement ?"))return;
+  const {error}=await sb.rpc("admin_confirmer_paiement",{p_id:id});
+  if(error){msg("Erreur : "+error.message);return}
+  msg("Abonnement activé ✅");
+  tfAdmin();
+}
+async function tfAdmNo(id){
+  if(!confirm("Refuser ce paiement ?"))return;
+  const {error}=await sb.rpc("admin_refuser_paiement",{p_id:id});
+  if(error){msg("Erreur : "+error.message);return}
+  msg("Paiement refusé");
+  tfAdmin();
+}
+
+/* Résumé : alerte et bouton visibles seulement pour toi */
+const tfRR2=rr;
+rr=async function(){
+  await tfRR2();
+  if(ROLE==="seller")return;
+  try{
+    const {data:ok}=await sb.rpc("est_admin");
+    if(!ok)return;
+    const {data:r}=await sb.rpc("admin_resume");
+    const n=(r&&r.attente)||0;
+    const pl=$("tf-plus");
+    if(pl&&!$("tf-adm-btn"))pl.insertAdjacentHTML("afterbegin",`<button id="tf-adm-btn" class="btn" style="margin-bottom:8px" onclick="tfAdmin('attente')">💳 Paiements et abonnés${n?" ("+n+")":""}</button>`);
+    if(n>0&&$("rsm")&&!$("tf-adm-alert"))$("rsm").insertAdjacentHTML("afterbegin",`<div id="tf-adm-alert" class="card" style="padding:14px 18px;border-color:var(--a);cursor:pointer" onclick="tfAdmin('attente')">💳 <b>${n}</b> paiement(s) à confirmer</div>`);
+  }catch(e){}
+};
 </script></body></html>
 
 
