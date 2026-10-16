@@ -1359,6 +1359,82 @@ verifAbo=async function(){
     ?card(`🔒 L'abonnement de la boutique est terminé. Demande à ton patron de le renouveler. Tu peux consulter les données, mais pas vendre.`,"","border-color:var(--r)")
     :card(`🔒 ${a?"Abonnement terminé":"Essai terminé"} : tu peux consulter tes données, mais plus vendre ni modifier.`,"<br>"+btn("Choisir un forfait"),"border-color:var(--r)");
 };
+/* ===== Choix à l'inscription : essai à la demande ===== */
+const tfOffres0=tfOffres;
+tfOffres=function(){if(TF_ST.choix)tfChoix();else tfOffres0()};
+
+const tfRender0=tfRender;
+tfRender=function(pay){
+  tfRender0(pay);
+  if(TF_ST.choix&&!pay){
+    const b=document.querySelector("#paywall .tf-abh button");
+    if(b)b.setAttribute("onclick","tfChoix()");
+  }
+};
+
+function tfChoix(){
+  const p=tfBox();
+  p.innerHTML=`<div class="tf-ab">
+    <div class="tf-abh"><b>Bienvenue sur TAÏF Marchand</b></div>
+    <div class="tf-abt">Comment veux-tu commencer ?</div>
+    <div class="tf-abs">Choisis une option pour utiliser l'application.</div>
+    <div class="card" style="margin:0 16px 14px">
+      <b style="font-size:1.15rem">🎁 Essayer gratuitement</b>
+      <p class="mut">7 jours pour tester toutes les fonctions, sans payer. Les 7 jours commencent quand tu appuies sur le bouton.</p>
+      <button class="btn" onclick="tfStartTrial()">Commencer l'essai de 7 jours</button>
+    </div>
+    <div class="card" style="margin:0 16px 14px">
+      <b style="font-size:1.15rem">⭐ Choisir mon abonnement</b>
+      <p class="mut">Choisis un forfait et paie tout de suite. Ton abonnement démarre dès que le paiement est confirmé.</p>
+      <button class="btn ol" onclick="tfOffres0()">Voir les forfaits</button>
+    </div>
+    <div class="tf-abb"><button class="btn ol" onclick="sb.auth.signOut().then(start)">Se déconnecter</button></div>
+  </div>`;
+  p.hidden=false;
+}
+
+async function tfStartTrial(){
+  const {error}=await sb.rpc("demarrer_essai");
+  if(error){msg("Impossible de démarrer l'essai. Réessaie dans un instant.");return}
+  const p=$("paywall");if(p)p.hidden=true;
+  await verifAbo();
+  msg("Essai gratuit de 7 jours démarré ✅");
+}
+
+verifAbo=async function(){
+  const {data:{session}}=await sb.auth.getSession();
+  let b=$("abo");
+  if(!b){b=document.createElement("div");b.id="abo";document.querySelector("#ap .w").prepend(b)}
+  if(!session){b.innerHTML="";TF_LOCK=false;return}
+  TF_EMAIL=session.user.email||"";
+  const {data,error}=await sb.from("abonnements").select("essai_fin,abonnement_fin,plan,essai_demarre").eq("user_id",session.user.id).maybeSingle();
+  if(error||!data){b.innerHTML="";return}
+  const now=Date.now(),e=data.essai_fin?new Date(data.essai_fin).getTime():0,a=data.abonnement_fin?new Date(data.abonnement_fin).getTime():0;
+  const fin=Math.max(e,a),jours=Math.ceil((fin-now)/864e5),heures=Math.ceil((fin-now)/36e5),seller=ROLE==="seller",paid=a>now;
+  const choix=!paid&&data.essai_demarre===false&&!seller;
+  const p=$("paywall"),wasOpen=!!(p&&!p.hidden);
+  TF_LOCK=choix||jours<=0;
+  TF_ST={jours,heures,paid,a,choix};
+  const card=(t,x,s)=>`<div class="card" ${seller?"":'onclick="tfOffres()"'} style="padding:14px 18px;${seller?"":"cursor:pointer;"}${s||""}">${t}${x||""}</div>`;
+  const btn=t=>`<button class="btn am sm" style="margin-top:10px" onclick="tfOffres()">${t}</button>`;
+  if(choix){
+    b.innerHTML=card(`👋 Bienvenue ! Choisis comment commencer.`,"<br>"+btn("Choisir"),"border-color:var(--a)");
+    if(!wasOpen)tfChoix();
+    return;
+  }
+  if(!TF_LOCK){
+    if(p)p.hidden=true;
+    if(wasOpen)msg("Abonnement actif ✅");
+    if(seller){b.innerHTML="";return}
+    if(jours>3)b.innerHTML=paid?card(`✅ Abonnement actif jusqu'au <b>${new Date(a).toLocaleDateString("fr-FR")}</b>`):card(`🎁 Essai gratuit : <b>${jours} jour(s)</b> restant(s)`);
+    else b.innerHTML=card(`⏳ ${paid?"Ton abonnement se termine":"Ton essai se termine"} dans <b>${heures} heure(s)</b>. Abonne-toi pour ne pas être bloqué.`,"<br>"+btn("Voir les forfaits"),"border-color:var(--a)");
+    return;
+  }
+  if(wasOpen)msg("Pas encore activé. Réessaie dans quelques minutes.");
+  b.innerHTML=seller
+    ?card(`🔒 L'abonnement de la boutique est terminé. Demande à ton patron de le renouveler. Tu peux consulter les données, mais pas vendre.`,"","border-color:var(--r)")
+    :card(`🔒 ${a?"Abonnement terminé":"Essai terminé"} : tu peux consulter tes données, mais plus vendre ni modifier.`,"<br>"+btn("Choisir un forfait"),"border-color:var(--r)");
+};
 </script></body></html>
 
 
