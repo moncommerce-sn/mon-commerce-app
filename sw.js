@@ -29,3 +29,4 @@ self.addEventListener('fetch',e=>{
     return m||net;
   }));
 });
+self.addEventListener("notificationclick",e=>{e.notification.close();const ecran=(e.notification.data||{}).ecran;e.waitUntil(clients.matchAll({type:"window",includeUncontrolled:true}).then(l=>{for(const c of l){c.focus();c.postMessage({ecran});return}return clients.openWindow("./")}))});
