@@ -268,6 +268,7 @@ async function verifAbo(){
 }
 const start0=start;
 start=async function(){await start0();await verifAbo()};
+ sb.auth.onAuthStateChange(e=>{if(e==="SIGNED_OUT")location.reload()});
  let ROLE=null;
 async function chargerRole(){
   const {data:{session}}=await sb.auth.getSession();
