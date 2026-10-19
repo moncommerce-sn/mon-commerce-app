@@ -104,7 +104,7 @@ nav button{border:0!important;border-radius:0!important}
 
 <section id="s-vente">
 <div class="card"><h2>Chercher un produit</h2><button class="btn am" onclick="scan('v')">📷 Scanner le code-barres</button>
-<label>Ou rechercher par nom (produits sans code-barres)</label><input id="q" oninput="rq()" placeholder="Nom, catégorie ou code..."><div id="res"></div></div>
+<label>Ou rechercher par nom (produits sans code-barres)</label><input id="q" autocomplete="off" oninput="rq()" placeholder="Nom, catégorie ou code..."><div id="res"></div></div>
 <div class="card" id="pickc" hidden><b id="pn" style="font-size:1.3rem"></b><div class="mut" id="pi"></div>
 <label>Quantité</label><input id="pq" type="number" inputmode="decimal" oninput="pm()">
 <label>Prix de vente pour cette vente (FCFA)</label><input id="pp" type="number" inputmode="numeric" oninput="pm()">
@@ -126,7 +126,7 @@ nav button{border:0!important;border-radius:0!important}
 <label>Prix d'achat (FCFA)</label><input id="f-a" type="number" inputmode="numeric"><label>Prix de vente (FCFA)</label><input id="f-v" type="number" inputmode="numeric">
 <label>Quantité en stock</label><input id="f-s" type="number" inputmode="decimal"><label>Alerte stock faible (quantité)</label><input id="f-l" type="number" inputmode="decimal" value="5">
 <button class="btn" id="f-ok" onclick="saveP()">Ajouter le produit</button><button class="btn ol" id="f-x" hidden onclick="resetF()">Annuler la modification</button></div>
-<div class="card"><h2 id="sh">Mes produits</h2><input id="sq" oninput="rs()" placeholder="🔍 Rechercher un produit..."><div id="sl"></div></div>
+<div class="card"><h2 id="sh">Mes produits</h2><input id="sq" autocomplete="off" oninput="rs()" placeholder="🔍 Rechercher un produit..."><div id="sl"></div></div>
 </section>
 
 <section id="s-dettes"><div class="card"><div class="mut">Total des dettes clients</div><div class="big bad" id="dtt">0 FCFA</div></div><div class="card"><h2>Liste des dettes</h2><div id="dl"></div></div><div class="card"><h2>Dettes soldées</h2><div id="ds"></div></div><div class="card"><h2>Historique des remboursements</h2><div id="dr"></div></div></section>
