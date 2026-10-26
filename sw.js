@@ -1,4 +1,4 @@
-const CACHE='taif-v4',DATA='taif-data';
+const CACHE='taif-v5',DATA='taif-data';
 const ASSETS=['./','index.html','manifest.json','icon-192.png','icon-512.png','icon-512-maskable.png','apple-touch-icon.png','favicon-32.png','confidentialite.html','conditions.html','https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js'];
 // Une réponse arrivée après une redirection ne peut pas servir à ouvrir une page : on la « nettoie ».
 const propre=res=>res&&res.redirected?res.blob().then(b=>new Response(b,{status:res.status,statusText:res.statusText,headers:res.headers})):Promise.resolve(res);
