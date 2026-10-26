@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boutique · TAÏF Marchand</title>
+<meta name="description" content="Découvrez les produits de la boutique et commandez directement sur WhatsApp.">
+<meta name="theme-color" content="#14513c">
+<style>
+:root{--g:#14513c;--g2:#0b3326;--a:#ffc31f;--bg:#f4f7f2;--card:#fff;--ink:#16231c;--mut:#5f7268;--ln:#dfe7e1;--wa:#1fa855}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.hd{background:var(--g);color:#fff;padding:calc(22px + env(safe-area-inset-top)) 18px 26px;border-radius:0 0 28px 28px}
+.hd .in,.w{max-width:960px;margin:auto}
+.hd h1{font-size:clamp(1.6rem,6vw,2.4rem);line-height:1.1;margin:0 0 8px;letter-spacing:-.01em}
+.hd p{margin:4px 0;color:#d5e6dc}
+.hd .dsc{color:#fff;margin-top:10px;max-width:60ch}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16px 10px}
+.bar input{width:100%;padding:13px 16px;border:1.5px solid var(--ln);border-radius:14px;font:inherit;background:var(--card);color:var(--ink)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.chips button{flex:none;border:1.5px solid var(--ln);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.9rem;cursor:pointer}
+.chips button.on{background:var(--g);border-color:var(--g);color:#fff}
+.gr{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:6px 16px 20px}
+.pr{background:var(--card);border:1px solid var(--ln);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
+.ph{aspect-ratio:1;background:#e6efe8 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:700;color:var(--g)}
+.pr .bd{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.pr b{font-size:.98rem;line-height:1.25}
+.px{font-size:1.1rem;font-weight:800;color:var(--g)}
+.rp{font-size:.8rem;color:#b8452a;font-weight:700}
+.add{margin-top:auto;border:0;border-radius:12px;padding:10px;font:inherit;font-weight:700;background:var(--g);color:#fff;cursor:pointer}
+.add:disabled{background:#cfd8d2;color:#6b7b72;cursor:default}
+.qt{margin-top:auto;display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--g);border-radius:12px;overflow:hidden}
+.qt button{border:0;background:transparent;color:var(--g);font:inherit;font-size:1.3rem;font-weight:700;width:42px;height:40px;cursor:pointer}
+.qt span{font-weight:800}
+.cart{position:fixed;left:0;right:0;bottom:0;z-index:9;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
+.cart button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:600px;margin:auto;border:0;border-radius:16px;padding:16px;background:var(--wa);color:#fff;font:inherit;font-size:1.05rem;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer}
+.msg{max-width:520px;margin:60px auto;padding:0 20px;text-align:center}
+.msg .ic{font-size:3rem}
+.ft{text-align:center;color:var(--mut);font-size:.85rem;padding:10px 16px 20px}
+.ft a{color:var(--g);font-weight:700}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1a15;--card:#17241d;--ink:#e7efe9;--mut:#9db0a5;--ln:#2a3a31}
+  .ph{background:#1f3128;color:#9fd3b6}
+  .px{color:#7fd1a3}.qt{border-color:#7fd1a3}.qt button{color:#7fd1a3}
+  .add:disabled{background:#2a3a31;color:#8a9a91}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="msg"><div class="ic">🛍️</div><p>Chargement de la boutique…</p></div></div>
+<script>
+(function(){
+  const SB="https://kqfhbxzcixcdcjcsvkla.supabase.co",CLE="sb_publishable_gmcnPJ8EOrK0pcEnSZIH8w_FY_65XvF";
+  const app=document.getElementById("app");
+  const h=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const nb=x=>Math.round(+x||0).toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g," ");
+  const lien=(new URLSearchParams(location.search).get("b")||"").trim().toLowerCase();
+  const pied=`<div class="ft">Boutique créée avec <a href="https://taifmarchand.com/">TAÏF Marchand</a> · gère tes ventes et ton stock depuis ton téléphone</div>`;
+  const ecran=(ic,titre,txt)=>{app.innerHTML=`<div class="msg"><div class="ic">${ic}</div><h2>${h(titre)}</h2><p style="color:var(--mut)">${txt}</p></div>${pied}`};
+
+  let B=null,cat="",rech="";const panier={};
+
+  async function charger(){
+    if(!/^[a-z0-9-]{3,40}$/.test(lien))return ecran("🔎","Boutique introuvable","Vérifie le lien que le commerçant t'a envoyé.");
+    try{
+      const r=await fetch(SB+"/rest/v1/rpc/boutique_publique",{method:"POST",headers:{"Content-Type":"application/json",apikey:CLE,Authorization:"Bearer "+CLE},body:JSON.stringify({p_lien:lien})});
+      if(!r.ok)throw new Error(r.status);
+      B=await r.json();
+    }catch(e){return ecran("📶","Connexion impossible","Vérifie ta connexion internet, puis <a href=\"\" onclick=\"location.reload();return false\">réessaie</a>.");}
+    if(!B||B.statut==="introuvable")return ecran("🔎","Boutique introuvable","Vérifie le lien que le commerçant t'a envoyé.");
+    if(B.statut==="fermee")return ecran("🌙",(B.nom||"Cette boutique")+" est fermée pour le moment","Reviens un peu plus tard ou contacte directement le commerçant.");
+    document.title=(B.nom||"Boutique")+" · Commandez sur WhatsApp";
+    page();
+  }
+
+  function page(){
+    const cats=[...new Set((B.produits||[]).map(p=>p.categorie).filter(Boolean))].sort();
+    app.innerHTML=`
+      <header class="hd"><div class="in">
+        <h1>${h(B.nom||"Ma boutique")}</h1>
+        ${B.adresse?`<p>📍 ${h(B.adresse)}</p>`:""}
+        ${B.desc?`<p class="dsc">${h(B.desc)}</p>`:""}
+      </div></header>
+      <div class="bar"><div class="w">
+        <input id="q" type="search" placeholder="🔍 Chercher un produit" value="${h(rech)}">
+        ${cats.length>1?`<div class="chips"><button data-c="" class="${cat?"":"on"}">Tout</button>${cats.map(c=>`<button data-c="${h(c)}" class="${c===cat?"on":""}">${h(c)}</button>`).join("")}</div>`:""}
+      </div></div>
+      <main class="w"><div class="gr" id="gr"></div></main>
+      ${pied}
+      <div class="cart" id="cart" hidden><button id="cmd"></button></div>`;
+    document.getElementById("q").oninput=e=>{rech=e.target.value;grille()};
+    app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{cat=b.dataset.c;app.querySelectorAll("[data-c]").forEach(x=>x.classList.toggle("on",x===b));grille()});
+    document.getElementById("cmd").onclick=commander;
+    grille();
+  }
+
+  function grille(){
+    const t=rech.toLowerCase().trim();
+    const l=(B.produits||[]).filter(p=>(!cat||p.categorie===cat)&&(!t||String(p.nom).toLowerCase().includes(t)));
+    const gr=document.getElementById("gr");
+    gr.innerHTML=l.length?l.map(p=>{
+      const q=panier[p.id]||0,ini=h(String(p.nom||"?").trim().charAt(0).toUpperCase());
+      return `<article class="pr">
+        <div class="ph" ${p.photo?`style="background-image:url('${h(p.photo)}')"`:""}>${p.photo?"":ini}</div>
+        <div class="bd"><b>${h(p.nom)}</b><span class="px">${nb(p.prix)} F</span>${p.dispo?"":`<span class="rp">Rupture de stock</span>`}
+        ${!p.dispo?`<button class="add" disabled>Indisponible</button>`
+          :q?`<div class="qt"><button data-m="${h(p.id)}">−</button><span>${q}</span><button data-p="${h(p.id)}">+</button></div>`
+          :`<button class="add" data-p="${h(p.id)}">Ajouter</button>`}
+        </div></article>`;}).join("")
+      :`<p style="grid-column:1/-1;text-align:center;color:var(--mut)">${(B.produits||[]).length?"Aucun produit trouvé.":"Aucun produit en ligne pour le moment."}</p>`;
+    gr.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{panier[b.dataset.p]=(panier[b.dataset.p]||0)+1;grille()});
+    gr.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const k=b.dataset.m;panier[k]=(panier[k]||0)-1;if(panier[k]<=0)delete panier[k];grille()});
+    barre();
+  }
+
+  function lignes(){return (B.produits||[]).filter(p=>panier[p.id]).map(p=>({p,q:panier[p.id]}))}
+  function barre(){
+    const l=lignes(),n=l.reduce((s,x)=>s+x.q,0),tot=l.reduce((s,x)=>s+x.q*(+x.p.prix||0),0);
+    const c=document.getElementById("cart");c.hidden=!n;
+    if(n)document.getElementById("cmd").innerHTML=`🟢 Commander sur WhatsApp · ${n} article${n>1?"s":""} · ${nb(tot)} F`;
+  }
+  function commander(){
+    const l=lignes();if(!l.length)return;
+    const tot=l.reduce((s,x)=>s+x.q*(+x.p.prix||0),0);
+    const txt="Bonjour "+(B.nom||"")+" 👋\nJe voudrais commander :\n"+l.map(x=>"• "+x.q+" × "+x.p.nom+" ("+nb(x.p.prix)+" F)").join("\n")+"\nTotal : "+nb(tot)+" F\n\n(Commande envoyée depuis votre boutique TAÏF Marchand)";
+    location.href="https://wa.me/221"+B.wa+"?text="+encodeURIComponent(txt);
+  }
+  charger();
+})();
+</script>
+</body>
+</html>
