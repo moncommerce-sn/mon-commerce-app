@@ -687,7 +687,7 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
   setInterval(envoyer,30000);
 })();
 (function(){
-  const VERSION="3.2.0";
+  const VERSION="3.3.0";
   window.APP_VERSION=VERSION;
   const s=document.getElementById("s-res");
   if(!s)return;
@@ -2524,6 +2524,7 @@ async function tfPayer(methode){
           <button class="btn" data-s>Enregistrer</button>
         </details>
 
+        <button class="btn ol" data-cond style="margin-top:18px;width:100%">📋 Conditions de ma boutique</button>
         <button class="btn" data-addv style="margin-top:18px">＋ Ajouter un produit à ma boutique</button>
         <h2 style="margin-top:22px">Mes produits en ligne</h2>
         <p class="mut" style="margin-top:-4px">Active les produits à montrer et ajoute une photo. Le client ne voit ni ton stock exact ni ton prix d'achat.</p>
@@ -3674,6 +3675,52 @@ async function tfPayer(methode){
   setTimeout(charger,3000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")charger()});
   sb.auth.onAuthStateChange(()=>setTimeout(charger,1500));
+})();
+
+/* ===== Conditions de la boutique + numéro du responsable (31/10/2026) ===== */
+(function(){
+  const h=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const EX="Ex. :\n🚚 Livraison à Dakar : 1 000 F, banlieue : 1 500 F\n⏱️ Livraison sous 24 h\n💵 Paiement à la livraison, Wave ou Orange Money\n↩️ Échange possible sous 3 jours avec le ticket";
+  window.tfConditions=async function(){
+    if(typeof ROLE!=="undefined"&&ROLE==="seller")return msg("Seul le patron peut modifier les conditions.");
+    if(!navigator.onLine)return msg("Il faut internet pour modifier les conditions.");
+    const o=document.createElement("div");
+    o.style.cssText="position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center";
+    o.innerHTML=`<div style="background:#fff;width:100%;max-width:600px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))">
+      <div class="top"><b style="font-size:1.2rem">📋 Conditions de ma boutique</b><button class="btn ol sm" data-x>Fermer</button></div>
+      <p class="mut" style="margin:10px 0">Les clients voient ces conditions sur ta boutique avant de commander. Ça t'évite de répondre toujours aux mêmes questions.</p>
+      <label><b>Mes conditions</b> <span class="mut">(livraison, frais, délais, paiement, retours)</span></label>
+      <textarea data-c rows="7" maxlength="600" placeholder="${h(EX)}" style="width:100%;box-sizing:border-box;margin:6px 0 4px;font:inherit;padding:10px;border:1.5px solid var(--ln);border-radius:12px">Chargement…</textarea>
+      <small class="mut" data-n></small>
+      <label style="display:block;margin-top:14px"><b>Numéro du responsable</b> <span class="mut">(facultatif)</span></label>
+      <p class="mut" style="margin:4px 0 6px;font-size:.88rem">Si le client n'a pas de réponse, il pourra contacter ce numéro sur WhatsApp.</p>
+      <input data-t type="tel" inputmode="tel" placeholder="ex. 77 123 45 67" maxlength="20">
+      <button class="btn" data-s style="width:100%;margin-top:16px">Enregistrer</button>
+    </div>`;
+    o.onclick=e=>{if(e.target===o)o.remove()};
+    document.body.appendChild(o);
+    const q=s=>o.querySelector(s),ta=q("[data-c]");
+    q("[data-x]").onclick=()=>o.remove();
+    const compte=()=>{q("[data-n]").textContent=ta.value.length+" / 600"};
+    ta.oninput=compte;
+    try{
+      const {data}=await sb.rpc("mes_conditions");
+      ta.value=(data&&data.conditions)||"";
+      const t=String((data&&data.tel_resp)||"");q("[data-t]").value=t.startsWith("221")&&t.length===12?t.slice(3):t;
+    }catch(e){ta.value=""}
+    compte();
+    q("[data-s]").onclick=async()=>{
+      const b=q("[data-s]");b.disabled=true;b.textContent="Enregistrement…";
+      try{
+        const {data:r,error}=await sb.rpc("maj_mes_conditions",{p_conditions:ta.value,p_tel:q("[data-t]").value});
+        if(error)throw error;
+        if(r==="ok"){msg("✅ Conditions enregistrées");o.remove();return}
+        msg(r==="tel_invalide"?"Numéro du responsable invalide.":r==="non_patron"?"Seul le patron peut modifier les conditions.":"Erreur : "+r);
+      }catch(e){msg("Impossible d'enregistrer. Vérifie internet et réessaie.")}
+      b.disabled=false;b.textContent="Enregistrer";
+    };
+  };
+  document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-cond]");if(b){e.preventDefault();tfConditions()}});
 })();
 
 /* L'app a démarré : l'encadré « problème au démarrage » ne doit plus apparaître */
