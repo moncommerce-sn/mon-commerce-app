@@ -335,7 +335,7 @@ async function rEq(){
   const r=await eqCall({action:"lister"});
   if(r.error){s.innerHTML='<div class="card"><h2>Mon équipe</h2><p class="bad">'+esc(r.error)+'</p></div><button class="btn ol" onclick="show(\'res\')">← Retour au Résumé</button>';return}
   const L=r.vendeurs||[],act=L.filter(v=>v.status==="active").length;
-  s.innerHTML=`<div class="card"><h2>Mon équipe (${act}/${r.max})</h2>`+
+  s.innerHTML=`<div class="card"><h2>Mon équipe (${act}${r.max==null?"":"/"+r.max})</h2>`+
   (L.map(v=>{const a=v.status==="active";return `<div class="it"><div class="top"><b>${esc(v.nom||"")}</b><span class="${a?"ok":"bad"}">${a?"Actif":"Inactif"}</span></div><div class="mut">Identifiant : ${esc(v.identifiant)}</div><div class="line" style="margin-top:10px"><button class="btn ol sm" onclick="eqMdp('${v.user_id}')">Mot de passe</button><button class="btn ${a?"rd":""} sm" onclick="eqEtat('${v.user_id}','${a?"desactiver":"reactiver"}')">${a?"Désactiver":"Réactiver"}</button></div></div>`}).join("")||'<p class="mut">Aucun vendeur pour le moment.</p>')+
   `</div><div class="card"><h2>Ajouter un vendeur</h2><label>Nom du vendeur</label><input id="eq-n"><label>Identifiant de connexion (sans espace)</label><input id="eq-i" autocapitalize="none"><label>Mot de passe provisoire (6 caractères minimum)</label><input id="eq-m"><button class="btn" onclick="eqAdd()">Ajouter le vendeur</button><p class="mut">Le vendeur se connecte avec cet identifiant et ce mot de passe, sur son propre téléphone.</p></div><button class="btn ol" onclick="show('res')">← Retour au Résumé</button>`;
 }
