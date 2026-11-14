@@ -2744,7 +2744,7 @@ async function tfPayer(methode){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${[["livraison_express","⚡ Livraison express"],["paiement_livraison","💵 Paiement à la livraison"],["livraison_gratuite","🚚 Livraison gratuite"],["echantillon","🧪 Échantillon possible"],["personnalisable","🎨 Personnalisable"],["garantie","🛡️ Garantie"],["retour","↩️ Retour accepté"],["prix_negociable","🤝 Prix négociable"]].map(([k,t])=>`<label style="display:flex;align-items:center;gap:6px;margin:0;font-size:.88rem"><input type="checkbox" data-etq="${k}" style="width:auto" ${(B.etiquettes||[]).includes(k)?"checked":""}> ${t}</label>`).join("")}</div>
           <label style="display:flex;align-items:center;gap:10px;margin-top:12px"><input data-a type="checkbox" style="width:auto" ${B.active||!B.lien?"checked":""}> Boutique ouverte aux clients</label>
           <label style="display:flex;align-items:center;gap:10px;margin-top:8px"><input data-m type="checkbox" style="width:auto" ${B.marche?"checked":""}> Apparaître sur le Marché TAÏF 🛒</label>
-          <label style="display:flex;align-items:center;gap:10px;margin-top:8px"><input data-g type="checkbox" style="width:auto" ${B.grossiste?"checked":""}> 📦 Je vends aussi en gros (grossiste)</label>
+          <label style="display:${window.tfDroits&&tfDroits().forfait==="pro"?"flex":"none"};align-items:center;gap:10px;margin-top:8px"><input data-g type="checkbox" style="width:auto" ${B.grossiste?"checked":""}> 📦 Je vends aussi en gros (grossiste)</label>
           <label style="display:flex;align-items:center;gap:10px;margin-top:8px"><input data-vit type="checkbox" style="width:auto" ${B.mode_vitrine?"checked":""}> 🛍️ J'utilise seulement la boutique en ligne (sans gestion de stock)</label>
           <p class="mut" style="font-size:.85rem;margin-top:2px">Tes produits en ligne seront visibles par tous les acheteurs sur taifmarchand.com/marche.</p>
           <p class="mut" style="font-size:.85rem">Le nom et l'adresse affichés se règlent dans Plus → « ✏️ Nom et adresse de ma boutique ».</p>
@@ -2805,7 +2805,7 @@ async function tfPayer(methode){
         msg(MSG[r]||"Enregistrement impossible.");
         if(r==="ok"){
           const {data:r2,error:e2}=await sb.rpc("maj_mon_marche",{p_marche:q("[data-m]").checked,p_ville:q("[data-v]").value,p_quartier:q("[data-qu]").value});
-          try{await sb.rpc("maj_mon_gros",{p_gros:q("[data-g]").checked})}catch(x){}
+          if(window.tfDroits&&tfDroits().forfait==="pro")try{await sb.rpc("maj_mon_gros",{p_gros:q("[data-g]").checked})}catch(x){}
           try{const {data:r3}=await sb.rpc("maj_mon_vendeur",{p_type:q("[data-t]").value,p_livraison:q("[data-liv]").value});
             if(r3==="livraison_manquante")msg("Pour la vente en ligne, indique ta zone de livraison (ex. Dakar et banlieue).");}catch(x){}
           try{await sb.rpc("mon_mode_vitrine",{p_on:q("[data-vit]").checked})}catch(x){}
