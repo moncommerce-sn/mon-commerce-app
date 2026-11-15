@@ -86,6 +86,8 @@ self.addEventListener('notificationclick',e=>{
   const ecran=(e.notification.data||{}).ecran;
   e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{
     const c=cs[0];
+    // Nouvelle commande : ouvrir la boîte « Commandes reçues » (15/11/2026)
+    if(url&&url.indexOf('cmds=1')>-1){if(c){c.postMessage({ecran:'cmds'});return c.focus();}return self.clients.openWindow(url);}
     if(c){if(ecran)c.postMessage({ecran});return c.focus();}
     return self.clients.openWindow('./');
   }));
