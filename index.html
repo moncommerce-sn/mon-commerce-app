@@ -706,7 +706,7 @@ sb.auth.onAuthStateChange(function(ev){if(ev==="SIGNED_OUT"&&window.caches)cache
   setInterval(envoyer,30000);
 })();
 (function(){
-  const VERSION="3.19.2";
+  const VERSION="3.19.3";
   window.APP_VERSION=VERSION;
   const s=document.getElementById("s-res");
   if(!s)return;
@@ -4146,11 +4146,14 @@ async function tfPayer(methode){
       if(e||!r||r.statut!=="ok"){occupe=false;b.disabled=false;b.textContent="Mettre en ligne";return msg("Impossible : "+(e?e.message:(r&&r.statut)||"erreur"))}
       if(rayNouveau&&r.ids)for(const id of r.ids){try{await sb.rpc("produit_rayon",{p_id:id,p_rayon:rayChoisi})}catch(x){}}
       try{await load()}catch(x){}
-      const att=ATT?ATT.lire():{};
+      const att=ATT?ATT.lire():{};let attErr="";
       if(Object.keys(att).length&&r.ids&&r.ids.length){
-        const {error:ea}=await sb.from("produits").update({attributs:att}).in("id",r.ids);
-        if(ea)msg("Produit en ligne, mais les informations clés n'ont pas pu être enregistrées.");
-        else (P||[]).forEach(z=>{if(r.ids.map(String).includes(String(z.id)))z.attributs=att});
+        /* Enregistrement par la fonction Supabase produit_attributs (24/11/2026) : l'écriture directe échouait sans message */
+        try{
+          const {data:ea0,error:ea}=await sb.rpc("produit_attributs",{p_ids:r.ids,p_attributs:att});
+          if(ea||ea0!=="ok")attErr=ea?ea.message:String(ea0);
+          else (P||[]).forEach(z=>{if(r.ids.map(String).includes(String(z.id)))z.attributs=att});
+        }catch(x){attErr=String(x&&x.message||x)}
       }
       if(photo&&r.ids&&r.ids.length){
         try{const ch=B.shop_id+"/"+r.ids[0]+"-"+Date.now()+".jpg";
@@ -4169,7 +4172,7 @@ async function tfPayer(methode){
           for(const id of r.ids){try{const {data:d2}=await sb.rpc("produit_details",{p_id:id,p_description:desc,p_photos:urls});if(d2==="ok"){const x=(P||[]).find(z=>String(z.id)===String(id));if(x){x.photos=urls;x.description=desc.trim()||null}}}catch(x){}}}
         if(urls.length<autres.length)msg("Produit en ligne, mais certaines photos n'ont pas pu être envoyées.");
       }
-      occupe=false;o.remove();msg("✅ « "+nom+" » est en ligne");apres&&apres();
+      occupe=false;o.remove();msg(attErr?("✅ « "+nom+" » est en ligne, mais les informations clés n'ont pas été enregistrées ("+attErr.slice(0,80)+")"):("✅ « "+nom+" » est en ligne"));apres&&apres();
     };
   };
   /* Ouvrir directement la boutique en mode « Boutique seulement » */
@@ -5248,5 +5251,4 @@ window.__tfPret=true;
 })();
 </script>
 </body></html>
-
 
