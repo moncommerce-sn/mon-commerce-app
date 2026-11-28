@@ -323,6 +323,7 @@ async function addD(){const m=+$("dm").value;if(!(m>0))return msg("Écris le mon
 async function delD(id){if(!confirm("Supprimer cette dépense ?"))return;await sb.from("depenses").delete().eq("id",id);rde()}
  async function tfLogout(){
   try{await sb.auth.signOut({scope:"local"})}catch(e){}
+  try{sessionStorage.removeItem("tf-gestion")}catch(e){}
   try{Object.keys(localStorage).forEach(k=>{if(k.startsWith("sb-"))localStorage.removeItem(k)})}catch(e){}
   location.replace(location.pathname);
 }
@@ -2265,17 +2266,18 @@ async function chargerRole(s){
     try{ROLE=localStorage.getItem("tf-role")||null}catch(x){ROLE=null}
   }
 }
-/* Marché d'abord (28/11/2026) : sans compte, l'app s'ouvre sur le Marché TAÏF, comme Alibaba.
-   Le formulaire de connexion reste accessible par « Vendre / Connexion » (/?connexion=1),
-   par un lien d'invitation (?p=CODE), un retour de paiement ou un lien email Supabase. */
+/* Marché d'abord (28/11/2026) : l'app s'ouvre sur le Marché TAÏF pour tout le monde, connecté ou non, comme Alibaba.
+   Le commerçant passe à sa gestion par « Mon commerce » (/?gestion=1) ; la connexion par « Vendre » (/?connexion=1).
+   Restent sur la gestion : lien d'invitation (?p=), retour de paiement, notification, lien email Supabase. */
 function tfVersMarche(){
   try{
     if(!navigator.onLine)return false;
     if(/marche-app\.html$/.test(location.pathname))return false;
+    if(sessionStorage.getItem("tf-gestion"))return false;
     const q=new URLSearchParams(location.search),h=location.hash||"";
-    if(q.get("connexion")||q.get("p")||q.get("paiement")||q.get("cmds")||q.get("code")||q.get("token_hash")||q.get("error"))return false;
-    if(/access_token|refresh_token|type=|error/.test(h))return false;
-    if(localStorage.getItem("tf-parrain"))return false;
+    if(q.get("gestion")||q.get("connexion")||q.get("p")||q.get("paiement")||q.get("cmds")||q.get("code")||q.get("token_hash")||q.get("error")||/access_token|refresh_token|type=|error/.test(h)||localStorage.getItem("tf-parrain")){
+      sessionStorage.setItem("tf-gestion","1");return false;
+    }
     return true;
   }catch(e){return false}
 }
@@ -2285,7 +2287,7 @@ async function start(){
   const e=tfEcranCharge(),securite=setTimeout(()=>e.remove(),10000);
   try{
     const s=await tfSession();
-    if(!s&&veutMarche){location.replace("marche-app.html");return}
+    if(veutMarche){location.replace("marche-app.html");return}
     await chargerRole(s);
     $("au").hidden=!!s;$("ap").hidden=!s;
     if(s){try{await load()}catch(x){}show("res")}
@@ -2976,7 +2978,7 @@ async function tfPayer(methode){
     if(ROLE==="seller")return;
     const r=$("rsm");
     if(!r||$("tf-btq-btn"))return;
-    const html=`<button id="tf-btq-btn" class="btn" style="width:100%;margin:0 0 14px" onclick="tfBoutique()">🛍️ Ma boutique en ligne</button>`;
+    const html=`<button id="tf-btq-btn" class="btn" style="width:100%;margin:0 0 14px" onclick="tfBoutique()">🛍️ Ma boutique en ligne</button><a id="tf-mrc-btn" class="btn ol" href="marche-app.html" style="display:block;box-sizing:border-box;text-align:center;text-decoration:none;width:100%;margin:0 0 14px">🛒 Voir le Marché TAÏF</a>`;
     const ap=$("tf-rsm-ancre");
     if(ap)ap.insertAdjacentHTML("afterend",html);
   }
